@@ -1,6 +1,8 @@
-'use strict'
+'use strict';
 
 import eventJSON from '../tests/voyage4_bears_events.json';
+
+const NOT_FOUND = -1;
 
 // This array is used to accumulate metrics as an array of objects. Each object
 // contains the following key/value pairs:
@@ -12,13 +14,10 @@ import eventJSON from '../tests/voyage4_bears_events.json';
 // columns contains the accumulated count for a specific metric.
 let aggregateResults = [];
 
-let name = '';
-let type = '';
-
 // Metrics are mapped to a particular column by the metricColumn array. The
 // relative position of the metric name in this array equates to its column
-// number in the teamMetrics and individualMetrics arrays.
-const metricColumn = [
+// number in the memberMetrics array.
+const metricColumns = [
   'CommitCommentEvent',
   'CreateEvent',
   'DeleteEvent',
@@ -58,15 +57,7 @@ const metricColumn = [
   'WatchEvent'
 ];
 
-let teamMetrics = metricColumn.map((element) => { return 0; });
-let memberMetrics = metricColumn.map((element) => { return 0; });
-
-function emitRow(name, type, metrics) {
-  metricsSummary = metrics.forEach(element => {
-    return ', ' + element;
-  })
-  return name + ', ' + type + metricsSummary;
-}
+let memberMetrics = metricColumns.map((element) => { return 0; });
 
 // Iterate through each team
 for (const prop in eventJSON) {
@@ -74,34 +65,41 @@ for (const prop in eventJSON) {
   const team = eventJSON[prop];
   const index = parseInt(prop);
   const teamName = team.repo.name;
-  teamMetrics = metricColumn.map((element) => { return 0; });
-
-  // Initialize the team member data
-  metricType = 'member';
-  memberMetrics = metricColumn.map((element) => { return 0; });
-  aggregateResults.push(team)
 
   // Process each team event and accumulate it in both the team and
   // member counts
-  console.log(`Property: ${index}, team: ${teamName}`);
   for (const key in team.repo.events) {
     const event = team.repo.events[key];
-    const eventType = event.type;
-    const eventColumn = metricColumn.findIndex((element, index) => {
-      return element === eventType;
+    const eventIndex = metricColumns.findIndex((element, index) => {
+      return element === event.type;
     });
-    const actorName = event.actor;
-    const created_at = event.created_at;
-    console.log(`...Key: ${key} Index: ${eventColumn} Event: ${eventType} Actor: ${actorName} Created: ${created_at}`);
-    name = actorName;
+    if (eventIndex === NOT_FOUND) {
+      throw new Error(`Unknown eventType ${eventType} was encountered`);
+    }
 
     // Search the aggregate results array to increment the count for the
-    // current user and event. Push the user onto the array if they haven't
+    // current team, user, and event. Push the user onto the array if they haven't
     // been added yet.
-    memberMetrics[eventColumn] += 1;
+    const memberIndex = aggregateResults.findIndex((element, index) => {
+      return element.team === teamName && element.name === event.actor;
+    });
 
-    teamMetrics[eventColumn] += 1;
+    if (memberIndex === NOT_FOUND) {
+      memberMetrics = metricColumns.map((element) => { return 0; });
+      memberMetrics[eventIndex] += 1;
+      aggregateResults.push({
+        team: teamName,
+        name: event.actor,
+        metrics: memberMetrics,
+      });
+    } else {
+      aggregateResults[memberIndex].metrics[eventIndex]++;
+    }
   }
-
-  console.log(`...Team: ${teamName} type: ${metricType} Events: `, teamMetrics);
 }
+
+// Write the aggregated results as a csv file
+console.log('Team, Name, ', metricColumns.toString());
+aggregateResults.forEach((element) => {
+  console.log(element.team + ', ' + element.name + ', ' + element.metrics.toString());
+});
