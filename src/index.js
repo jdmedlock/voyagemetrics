@@ -1,6 +1,6 @@
 'use strict';
 
-import eventJSON from '../tests/voyage4_bears_events.json';
+import eventJSON from '../tests/voyage4_allteams.json';
 
 const NOT_FOUND = -1;
 
