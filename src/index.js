@@ -1,6 +1,6 @@
 'use strict';
 
-import eventJSON from '/Users/jim.medlock/Downloads/voyage4_events_20180419.json';
+import eventJSON from '/Users/jim/Downloads/voyage4_events_20180419.json';
 
 const NOT_FOUND = -1;
 
@@ -62,7 +62,6 @@ const metricColumns = [
   { event: 'TeamAddEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
   { event: 'WatchEvent',  deprecated: false, weight: ACTIVITY_MANAGING }
 ];
-
 let memberMetrics = metricColumns.map((element) => { return 0; });
 
 // Iterate through each team
@@ -81,6 +80,7 @@ for (const prop in eventJSON) {
               && element.weight !== ACTIVITY_PASSIVE;
     });
     if (eventIndex !== NOT_FOUND) {
+
       // Search the aggregate results array to increment the count for the
       // current team, user, and event. Push the user onto the array if they haven't
       // been added yet.
@@ -110,7 +110,13 @@ const metricHeadings = metricColumns.reduce((headings, element) => {
   }
   return headings;
 }, '');
-console.log('Team, Name, ', metricHeadings);
+console.log('Team, Name ', metricHeadings);
 aggregateResults.forEach((element) => {
-  console.log(element.team + ', ' + element.name + ', ' + element.metrics.toString());
+  const metricValues = metricColumns.reduce((outputValues, metricColumn, metricIndex) => {
+    if (!metricColumn.deprecated && metricColumn.weight !== ACTIVITY_PASSIVE) {
+      return outputValues.concat(', ', element.metrics[metricIndex]);
+    }
+    return outputValues;
+    }, '');
+  console.log(element.team + ', ' + element.name + ' ' + metricValues);
 });
