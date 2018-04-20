@@ -1,6 +1,6 @@
 'use strict';
 
-import eventJSON from '/Users/jim/Downloads/voyage4_events_20180419.json';
+import eventJSON from '/Users/jim.medlock/Downloads/voyage4_events_20180419.json';
 
 const NOT_FOUND = -1;
 
@@ -24,43 +24,43 @@ const ACTIVITY_DEVELOPING = 2;  // Activities directly related to active develop
 const ACTIVITY_PUBLISHING = 3;  // Activities performed to publish an app
 
 const metricColumns = [
-  { event: 'CommitCommentEvent', deprecated: false, weight: ACTIVITY_MANAGING },           // Triggered when a commit comment is created
-  { event: 'CreateEvent', deprecated: false, weight: ACTIVITY_MANAGING },
-  { event: 'DeleteEvent', deprecated: false, weight: ACTIVITY_MANAGING },
-  { event: 'DeploymentEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'DeploymentStatusEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'DownloadEvent', deprecated: true, weight: ACTIVITY_PASSIVE },
-  { event: 'FollowEvent', deprecated: true, weight: ACTIVITY_PASSIVE },
-  { event: 'ForkEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'ForkApplyEvent', deprecated: true, weight: ACTIVITY_PASSIVE },
-  { event: 'GistEvent', deprecated: true, weight: ACTIVITY_PASSIVE },
-  { event: 'GollumEvent', deprecated: false, weight: ACTIVITY_MANAGING },
-  { event: 'InstallationEvent', deprecated: false, weight: ACTIVITY_MANAGING },
-  { event: 'InstallationRepositoriesEvent', deprecated: false, weight: ACTIVITY_MANAGING },
-  { event: 'IssueCommentEvent', deprecated: false, weight: ACTIVITY_MANAGING },
-  { event: 'IssuesEvent', deprecated: false, weight: ACTIVITY_DEVELOPING },
-  { event: 'LabelEvent', deprecated: false, weight: ACTIVITY_MANAGING },
-  { event: 'MarketplacePurchaseEvent', deprecated: false, weight: ACTIVITY_MANAGING },
-  { event: 'MemberEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'MembershipEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'MilestoneEvent', deprecated: false, weight: ACTIVITY_MANAGING },
-  { event: 'OrganizationEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'OrgBlockEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'PageBuildEvent', deprecated: false, weight: ACTIVITY_PUBLISHING },
-  { event: 'ProjectCardEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'ProjectColumnEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'ProjectEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'PublicEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'PullRequestEvent', deprecated: false, weight: ACTIVITY_PUBLISHING },
-  { event: 'PullRequestReviewEvent', deprecated: false, weight: ACTIVITY_DEVELOPING },
-  { event: 'PullRequestReviewCommentEvent', deprecated: false, weight: ACTIVITY_DEVELOPING },
-  { event: 'PushEvent', deprecated: false, weight: ACTIVITY_PUBLISHING },
-  { event: 'ReleaseEvent', deprecated: false, weight: ACTIVITY_PUBLISHING },
-  { event: 'RepositoryEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'StatusEvent', deprecated: false, weight: ACTIVITY_DEVELOPING },
-  { event: 'TeamEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'TeamAddEvent', deprecated: false, weight: ACTIVITY_PASSIVE },
-  { event: 'WatchEvent',  deprecated: false, weight: ACTIVITY_MANAGING }
+  { event: 'CommitCommentEvent', title: 'Commit Comment', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'CreateEvent', title: 'Create Repo/Branch/Tag', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'DeleteEvent', title: 'Delete Branch or Tag', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'DeploymentEvent', title: 'Deployment', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'DeploymentStatusEvent', title: 'Deployment Status', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'DownloadEvent', title: '', deprecated: true, weight: ACTIVITY_PASSIVE },
+  { event: 'FollowEvent', title: '', deprecated: true, weight: ACTIVITY_PASSIVE },
+  { event: 'ForkEvent', title: 'Fork Repo', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'ForkApplyEvent', title: '', deprecated: true, weight: ACTIVITY_PASSIVE },
+  { event: 'GistEvent', title: '', deprecated: true, weight: ACTIVITY_PASSIVE },
+  { event: 'GollumEvent', title: 'Create/Update Wiki', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'InstallationEvent', title: 'Install/Uninstall App', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'InstallationRepositoriesEvent', title: 'Add/Remove Repo from Installation', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'IssueCommentEvent', title: 'Create/Edit/Delete Issue Comment', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'IssuesEvent', title: 'Add/Update Issue', deprecated: false, weight: ACTIVITY_DEVELOPING },
+  { event: 'LabelEvent', title: 'Add/Update/Delete Repo Label', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'MarketplacePurchaseEvent', title: 'Marketplace Activity', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'MemberEvent', title: 'Collaborator Activity', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'MembershipEvent', title: 'Add/Remove User from Team', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'MilestoneEvent', title: 'Milestone Activity', deprecated: false, weight: ACTIVITY_MANAGING },
+  { event: 'OrganizationEvent', title: 'Organization Activity', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'OrgBlockEvent', title: 'Block/Unblock User from Org', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'PageBuildEvent', title: 'Build GH Pages Site', deprecated: false, weight: ACTIVITY_PUBLISHING },
+  { event: 'ProjectCardEvent', title: 'Project Card Activity', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'ProjectColumnEvent', title: 'Project Column Activity', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'ProjectEvent', title: 'Project Activity', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'PublicEvent', title: 'Make Repo Public', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'PullRequestEvent', title: 'Pull Request', deprecated: false, weight: ACTIVITY_PUBLISHING },
+  { event: 'PullRequestReviewEvent', title: 'PR Review', deprecated: false, weight: ACTIVITY_DEVELOPING },
+  { event: 'PullRequestReviewCommentEvent', title: 'PR Review Comment', deprecated: false, weight: ACTIVITY_DEVELOPING },
+  { event: 'PushEvent', title: 'Push to Branch', deprecated: false, weight: ACTIVITY_PUBLISHING },
+  { event: 'ReleaseEvent', title: 'Release Activity', deprecated: false, weight: ACTIVITY_PUBLISHING },
+  { event: 'RepositoryEvent', title: 'Create/Manage Repo', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'StatusEvent', title: 'Change Commit Status', deprecated: false, weight: ACTIVITY_DEVELOPING },
+  { event: 'TeamEvent', title: 'Create/Remove Org Team', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'TeamAddEvent', title: 'Add Repo to Team', deprecated: false, weight: ACTIVITY_PASSIVE },
+  { event: 'WatchEvent', title: 'Watch Repo',  deprecated: false, weight: ACTIVITY_MANAGING }
 ];
 let memberMetrics = metricColumns.map((element) => { return 0; });
 
@@ -106,11 +106,11 @@ for (const prop in eventJSON) {
 // Write the aggregated results as a csv file
 const metricHeadings = metricColumns.reduce((headings, element) => {
   if (!element.deprecated && element.weight !== ACTIVITY_PASSIVE) {
-    return headings.concat(', ', element.event);
+    return headings.concat(', ', element.title.toString());
   }
   return headings;
 }, '');
-console.log('Team, Name ', metricHeadings);
+console.log('Tier, Team, Name ', metricHeadings);
 aggregateResults.forEach((element) => {
   const metricValues = metricColumns.reduce((outputValues, metricColumn, metricIndex) => {
     if (!metricColumn.deprecated && metricColumn.weight !== ACTIVITY_PASSIVE) {
@@ -118,5 +118,6 @@ aggregateResults.forEach((element) => {
     }
     return outputValues;
     }, '');
-  console.log(element.team + ', ' + element.name + ' ' + metricValues);
+  console.log(element.team.split('-')[0] + ', ' + element.team + ', ' +
+    element.name + ' ' + metricValues);
 });
