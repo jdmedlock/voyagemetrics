@@ -56,7 +56,7 @@ function writeCSV() {
   }, '');
 
   // Write the aggregated results as a CSV file
-  console.log('Tier, Team, Name, Team Active ', metricHeadings);
+  console.log('Tier, Team, Name, Team Active, Last Actor Activity ', metricHeadings);
   aggregateResults.forEach((element) => {
     let metricValues = ghEventMetrics.reduce((outputValues, metricColumn, metricIndex) => {
       if (!metricColumn.deprecated && metricColumn.weight !== ACTIVITY_PASSIVE) {
@@ -66,7 +66,8 @@ function writeCSV() {
       }, '');
       metricValues = metricValues + ', ' + element.metrics[TOTALS_INDEX];
     console.log(element.tier+ ', ' + element.team + ', ' + 
-      element.name + ', ' + element.teamActive + metricValues);
+      element.name + ', ' + element.teamActive + ', ' + 
+      element.lastActorActivityDt + metricValues);
   });
 }
 
@@ -104,6 +105,7 @@ const NOT_FOUND = -1;
       let eventActor = team.repo.events[key].actor;
       const eventName = team.repo.events[key].type;
       const eventIndex = findQualifyingEvent(eventName);
+      const activityDate = team.repo.events[key].created_at;
 
       // Determine if the actor is one of the Organization administrators
       const isAdmin = findAdminByActor(eventActor) === NOT_FOUND;
@@ -125,10 +127,14 @@ const NOT_FOUND = -1;
               team: teamName,
               name: eventActor,
               teamActive: true,
+              lastActorActivityDt: activityDate.slice(0,10),
               metrics: memberMetrics,
             });
           } else {
             isTeamActive = true;
+            if (activityDate > aggregateResults[memberIndex].lastActorActivityDt) {
+              aggregateResults[memberIndex].lastActorActivityDt = activityDate.slice(0,10);
+            }
             aggregateResults[memberIndex].metrics[eventIndex] += ghEventMetrics[eventIndex].weight;
             aggregateResults[memberIndex].metrics[TOTALS_INDEX] += ghEventMetrics[eventIndex].weight;
           }
@@ -144,6 +150,7 @@ const NOT_FOUND = -1;
         team: teamName,
         name: '*** inactive ***',
         teamActive: false,
+        lastActorActivityDt: '1900-01-01',
         metrics: memberMetrics,
       });
     }
