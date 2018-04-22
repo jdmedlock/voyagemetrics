@@ -1,7 +1,7 @@
 import { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEventMetrics } from './ghEventMetrics';
 import voyageAdmins from '../voyageAdmins.json';
-import eventJSON from '/Users/jim.medlock/Downloads/voyage4_events_20180419.json';
+import eventJSON from '/Users/jim/Downloads/voyage4_events_20180419.json';
 
 /**
  * @description Find a matching entry in the Voyage admin array matching
@@ -43,19 +43,46 @@ function findResultByActor(teamName, actor) {
     return element.team === teamName && element.name === actor;
   });
 }
+/**
+ * @description Write the aggregated results to a CSV file
+ */
+function writeCSV() {
+  // Determine which column headings are to be used
+  const metricHeadings = ghEventMetrics.reduce((headings, element) => {
+    if (!element.deprecated && element.weight !== ACTIVITY_PASSIVE) {
+      return headings.concat(', ', element.title.toString());
+    }
+    return headings;
+  }, '');
+
+  // Write the aggregated results as a CSV file
+  console.log('Tier, Team, Name, Team Active ', metricHeadings);
+  aggregateResults.forEach((element) => {
+    const metricValues = ghEventMetrics.reduce((outputValues, metricColumn, metricIndex) => {
+      if (!metricColumn.deprecated && metricColumn.weight !== ACTIVITY_PASSIVE) {
+        return outputValues.concat(', ', element.metrics[metricIndex]);
+      }
+      return outputValues;
+      }, '');
+    console.log(element.tier+ ', ' + element.team + ', ' + 
+      element.name + ', ' + element.teamActive + metricValues);
+  });
+}
 
 const NOT_FOUND = -1;
 
 // This array is used to accumulate metrics as an array of objects. Each object
 // contains the following key/value pairs:
-//    `type:` defines whether the metrics are for a `team` or a `member`
-//    `name:` defines which team or individual the metrics are related to
-//    `metrics:`
+//    `tier:` defines which of the tiers this team is related to
+//    `team:` defines the members team name
+//    `name:` defines the GitHub account name of the individual the metrics
+//            are related to
+//    `teamActive:` true if the team is active or false if it is inactive
+//    `metrics:` holds the 
 // team members. Rows contain the team or team member name, the metric type
 // identifying if its for a team or team member, and the remaining
 // columns contains the accumulated count for a specific metric.
 let aggregateResults = [];
-let memberMetrics = [];
 
 (function() {
   "use strict";
@@ -65,6 +92,9 @@ let memberMetrics = [];
     const team = eventJSON[prop];
     const index = parseInt(prop);
     const teamName = team.repo.name;
+    const tierName = teamName.split('-')[0];
+    let isTeamActive = false;
+    let memberMetrics = [];
 
     // Process each team event and accumulate it in both the team and
     // member counts
@@ -83,37 +113,34 @@ let memberMetrics = [];
         const memberIndex = findResultByActor(teamName, eventActor);
         if (isAdmin) {
           if (memberIndex === NOT_FOUND) {
+            isTeamActive = true;
             memberMetrics = ghEventMetrics.map((element) => { return 0; });
             memberMetrics[eventIndex] += ghEventMetrics[eventIndex].weight;
             aggregateResults.push({
+              tier: tierName,
               team: teamName,
               name: eventActor,
+              teamActive: true,
               metrics: memberMetrics,
             });
           } else {
+            isTeamActive = true;
             aggregateResults[memberIndex].metrics[eventIndex] += ghEventMetrics[eventIndex].weight;
           }
         }
       }
     }
-  }
-
-  // Write the aggregated results as a csv file
-  const metricHeadings = ghEventMetrics.reduce((headings, element) => {
-    if (!element.deprecated && element.weight !== ACTIVITY_PASSIVE) {
-      return headings.concat(', ', element.title.toString());
+    if (!isTeamActive) {
+      memberMetrics = ghEventMetrics.map((element) => { return 0; });
+      aggregateResults.push({
+        tier: tierName,
+        team: teamName,
+        name: '*** inactive ***',
+        teamActive: false,
+        metrics: memberMetrics,
+      });
     }
-    return headings;
-  }, '');
-  console.log('Tier, Team, Name ', metricHeadings);
-  aggregateResults.forEach((element) => {
-    const metricValues = ghEventMetrics.reduce((outputValues, metricColumn, metricIndex) => {
-      if (!metricColumn.deprecated && metricColumn.weight !== ACTIVITY_PASSIVE) {
-        return outputValues.concat(', ', element.metrics[metricIndex]);
-      }
-      return outputValues;
-      }, '');
-    console.log(element.team.split('-')[0] + ', ' + element.team + ', ' +
-      element.name + metricValues);
-  });
+  }
+  // Write the results as a CSV file
+  writeCSV();
 }());
