@@ -58,18 +58,17 @@ function writeCSV() {
   // Write the aggregated results as a CSV file
   console.log('Tier, Team, Name, Team Active ', metricHeadings);
   aggregateResults.forEach((element) => {
-    const metricValues = ghEventMetrics.reduce((outputValues, metricColumn, metricIndex) => {
+    let metricValues = ghEventMetrics.reduce((outputValues, metricColumn, metricIndex) => {
       if (!metricColumn.deprecated && metricColumn.weight !== ACTIVITY_PASSIVE) {
         return outputValues.concat(', ', element.metrics[metricIndex]);
       }
       return outputValues;
       }, '');
+      metricValues = metricValues + ', ' + element.metrics[TOTALS_INDEX];
     console.log(element.tier+ ', ' + element.team + ', ' + 
       element.name + ', ' + element.teamActive + metricValues);
   });
 }
-
-const NOT_FOUND = -1;
 
 // This array is used to accumulate metrics as an array of objects. Each object
 // contains the following key/value pairs:
@@ -83,6 +82,9 @@ const NOT_FOUND = -1;
 // identifying if its for a team or team member, and the remaining
 // columns contains the accumulated count for a specific metric.
 let aggregateResults = [];
+
+const TOTALS_INDEX = ghEventMetrics.length;
+const NOT_FOUND = -1;
 
 (function() {
   "use strict";
@@ -115,7 +117,9 @@ let aggregateResults = [];
           if (memberIndex === NOT_FOUND) {
             isTeamActive = true;
             memberMetrics = ghEventMetrics.map((element) => { return 0; });
+            memberMetrics.push(0); // Totals column
             memberMetrics[eventIndex] += ghEventMetrics[eventIndex].weight;
+            memberMetrics[TOTALS_INDEX] += ghEventMetrics[eventIndex].weight;
             aggregateResults.push({
               tier: tierName,
               team: teamName,
@@ -126,12 +130,15 @@ let aggregateResults = [];
           } else {
             isTeamActive = true;
             aggregateResults[memberIndex].metrics[eventIndex] += ghEventMetrics[eventIndex].weight;
+            aggregateResults[memberIndex].metrics[TOTALS_INDEX] += ghEventMetrics[eventIndex].weight;
           }
         }
       }
     }
+    // Create an entry for inactive teams
     if (!isTeamActive) {
       memberMetrics = ghEventMetrics.map((element) => { return 0; });
+      memberMetrics.push(0); // Totals column
       aggregateResults.push({
         tier: tierName,
         team: teamName,
