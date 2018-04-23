@@ -1,7 +1,7 @@
 import { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEventMetrics } from './ghEventMetrics';
 import voyageAdmins from '../voyageAdmins.json';
-import eventJSON from '/Users/jim/Downloads/voyage4_events_20180419.json';
+import eventJSON from '/Users/jim.medlock/Downloads/voyage4_events_20180423.json';
 
 function calculatePercentileRank() {
   // Sort the aggregated results in decending sequence by the total score
@@ -21,7 +21,7 @@ function calculatePercentileRank() {
   const totalNoScores = aggregateResults.length;
   aggregateResults.map((entry, entryIndex) => {
     const noLowerScores = totalNoScores - (entryIndex - 1);
-    entry.metrics[PERCENTILE_RANK_INDEX] = 
+    entry.metrics[PERCENTILE_RANK_INDEX] =
       ((noLowerScores / totalNoScores) * 100).toFixed(2);
     return entry;
   });
@@ -75,13 +75,18 @@ function writeCSV() {
   // Determine which column headings are to be used
   const metricHeadings = ghEventMetrics.reduce((headings, element) => {
     if (!element.deprecated && element.weight !== ACTIVITY_PASSIVE) {
-      return headings.concat(', ', element.title.toString());
+      //return headings.concat(', ', element.title.toString());
+      headings.push(element.title);
+      return headings;
     }
     return headings;
-  }, '');
+  }, []);
 
   // Write the aggregated results as a CSV file
-  console.log('Tier, Team, Name, Team Active, Last Actor Activity ',
+  const currentDate = new Date();
+  console.log(`Extraction date: ${currentDate.toLocaleDateString('en-US')} \
+    ,,,,,,${','.repeat(metricHeadings.length)}`);
+  console.log('Tier, Team, Name, Team Active, Last Actor Activity, ',
     metricHeadings + ', Total Score, Percentile Rank');
   aggregateResults.forEach((element) => {
     let metricValues = ghEventMetrics.reduce((outputValues, metricColumn, metricIndex) => {
@@ -89,11 +94,11 @@ function writeCSV() {
         return outputValues.concat(', ', element.metrics[metricIndex]);
       }
       return outputValues;
-      }, '');
-      metricValues = metricValues + ', ' + element.metrics[TOTALS_INDEX] +
-        ', ' + element.metrics[PERCENTILE_RANK_INDEX];
-    console.log(element.tier+ ', ' + element.team + ', ' + 
-      element.name + ', ' + element.teamActive + ', ' + 
+    }, '');
+    metricValues = metricValues + ', ' + element.metrics[TOTALS_INDEX] +
+      ', ' + element.metrics[PERCENTILE_RANK_INDEX];
+    console.log(element.tier+ ', ' + element.team + ', ' +
+      element.name + ', ' + element.teamActive + ', ' +
       element.lastActorActivityDt + metricValues);
   });
 }
@@ -105,7 +110,7 @@ function writeCSV() {
 //    `name:` defines the GitHub account name of the individual the metrics
 //            are related to
 //    `teamActive:` true if the team is active or false if it is inactive
-//    `metrics:` holds the 
+//    `metrics:` holds the
 // team members. Rows contain the team or team member name, the metric type
 // identifying if its for a team or team member, and the remaining
 // columns contains the accumulated count for a specific metric.
