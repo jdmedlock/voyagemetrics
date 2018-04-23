@@ -48,4 +48,5 @@ const ghEventMetrics = [
   { event: 'WatchEvent', title: 'Watch Repo',  deprecated: false, weight: ACTIVITY_MANAGING }
 ];
 
-export { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING, ACTIVITY_PUBLISHING, ghEventMetrics };
+module.exports = { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
+  ACTIVITY_PUBLISHING, ghEventMetrics };

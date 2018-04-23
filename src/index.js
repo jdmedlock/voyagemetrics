@@ -1,7 +1,8 @@
-import { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
-  ACTIVITY_PUBLISHING, ghEventMetrics } from './ghEventMetrics';
-import voyageAdmins from '../voyageAdmins.json';
-import eventJSON from '/Users/jim.medlock/Downloads/voyage4_events_20180423.json';
+const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
+  ACTIVITY_PUBLISHING, ghEventMetrics } = require('./ghEventMetrics');
+const voyageAdmins = require('../voyageAdmins.json');
+const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
+const goauth = require('./classes/GoogleOAuth');
 
 function calculatePercentileRank() {
   // Sort the aggregated results in decending sequence by the total score
@@ -88,6 +89,7 @@ function writeCSV() {
     ,,,,,,${','.repeat(metricHeadings.length)}`);
   console.log('Tier, Team, Name, Team Active, Last Actor Activity, ',
     metricHeadings + ', Total Score, Percentile Rank');
+
   aggregateResults.forEach((element) => {
     let metricValues = ghEventMetrics.reduce((outputValues, metricColumn, metricIndex) => {
       if (!metricColumn.deprecated && metricColumn.weight !== ACTIVITY_PASSIVE) {
@@ -122,6 +124,10 @@ const NOT_FOUND = -1;
 
 (function() {
   "use strict";
+  //
+  goauth.loadClientSecrets(() => {
+    console.log('got here following Google authentication');
+  });
   // Iterate through each team
   for (const prop in eventJSON) {
     // Initialize the team data
