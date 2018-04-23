@@ -3,6 +3,30 @@ import { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
 import voyageAdmins from '../voyageAdmins.json';
 import eventJSON from '/Users/jim/Downloads/voyage4_events_20180419.json';
 
+function calculatePercentileRank() {
+  // Sort the aggregated results in decending sequence by the total score
+  aggregateResults.sort((a,b) => {
+    if (a.metrics[TOTALS_INDEX] > b.metrics[TOTALS_INDEX]) {
+      return -1;
+    }
+    if (a.metrics[TOTALS_INDEX] < b.metrics[TOTALS_INDEX]) {
+      return 1;
+    }
+    return 0;
+  });
+
+  // Calculate the percentile rank for each team member. The percentile rank
+  // is calculated as:
+  //    (# scores lower than current score / total number of scores) * 100
+  const totalNoScores = aggregateResults.length;
+  aggregateResults.map((entry, entryIndex) => {
+    const noLowerScores = totalNoScores - (entryIndex - 1);
+    entry.metrics[PERCENTILE_RANK_INDEX] = 
+      ((noLowerScores / totalNoScores) * 100).toFixed(2);
+    return entry;
+  });
+}
+
 /**
  * @description Find a matching entry in the Voyage admin array matching
  * the input GitHub account name..
@@ -43,6 +67,7 @@ function findResultByActor(teamName, actor) {
     return element.team === teamName && element.name === actor;
   });
 }
+
 /**
  * @description Write the aggregated results to a CSV file
  */
@@ -56,7 +81,8 @@ function writeCSV() {
   }, '');
 
   // Write the aggregated results as a CSV file
-  console.log('Tier, Team, Name, Team Active, Last Actor Activity ', metricHeadings);
+  console.log('Tier, Team, Name, Team Active, Last Actor Activity ',
+    metricHeadings + ', Total Score, Percentile Rank');
   aggregateResults.forEach((element) => {
     let metricValues = ghEventMetrics.reduce((outputValues, metricColumn, metricIndex) => {
       if (!metricColumn.deprecated && metricColumn.weight !== ACTIVITY_PASSIVE) {
@@ -64,7 +90,8 @@ function writeCSV() {
       }
       return outputValues;
       }, '');
-      metricValues = metricValues + ', ' + element.metrics[TOTALS_INDEX];
+      metricValues = metricValues + ', ' + element.metrics[TOTALS_INDEX] +
+        ', ' + element.metrics[PERCENTILE_RANK_INDEX];
     console.log(element.tier+ ', ' + element.team + ', ' + 
       element.name + ', ' + element.teamActive + ', ' + 
       element.lastActorActivityDt + metricValues);
@@ -85,6 +112,7 @@ function writeCSV() {
 let aggregateResults = [];
 
 const TOTALS_INDEX = ghEventMetrics.length;
+const PERCENTILE_RANK_INDEX = TOTALS_INDEX + 1;
 const NOT_FOUND = -1;
 
 (function() {
@@ -120,6 +148,7 @@ const NOT_FOUND = -1;
             isTeamActive = true;
             memberMetrics = ghEventMetrics.map((element) => { return 0; });
             memberMetrics.push(0); // Totals column
+            memberMetrics.push(0); // Percentile Rank column
             memberMetrics[eventIndex] += ghEventMetrics[eventIndex].weight;
             memberMetrics[TOTALS_INDEX] += ghEventMetrics[eventIndex].weight;
             aggregateResults.push({
@@ -145,6 +174,7 @@ const NOT_FOUND = -1;
     if (!isTeamActive) {
       memberMetrics = ghEventMetrics.map((element) => { return 0; });
       memberMetrics.push(0); // Totals column
+      memberMetrics.push(0); // Percentile Rank column
       aggregateResults.push({
         tier: tierName,
         team: teamName,
@@ -155,6 +185,9 @@ const NOT_FOUND = -1;
       });
     }
   }
+  // Calculate and add the Percentile Rank to each team member
+  calculatePercentileRank();
+
   // Write the results as a CSV file
   writeCSV();
 }());
