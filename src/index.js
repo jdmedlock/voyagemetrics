@@ -3,6 +3,7 @@ const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('./ghEvents');
 const goauth = require('./classes/GoogleOAuth');
 const Metrics = require('./classes/Metrics');
+const Sheet = require('./classes/Sheet');
 
 /**
  * @description Write the aggregated results to a CSV file
@@ -43,7 +44,7 @@ function writeCSV(metrics) {
 
 (function() {
   "use strict";
-  
+
   // Authorize Google Sheets access and calculate the Voyage metrics
   goauth.loadClientSecrets((auth) => {
     const metrics = new Metrics();
@@ -51,5 +52,7 @@ function writeCSV(metrics) {
 
     // Write the results as a CSV file
     writeCSV(metrics);
+
+    const sheet = new Sheet(auth);
   });
 }());

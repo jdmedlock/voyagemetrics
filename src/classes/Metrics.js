@@ -5,7 +5,7 @@ const eventJSON = require('/Users/jdmedlock/Downloads/voyage4_events_20180423.js
 
 const NOT_FOUND = -1;
 
-module.exports = class Repo {
+module.exports = class Metrics {
   /**
    * @descriptor Create a new instance of the Metrics class
    */
