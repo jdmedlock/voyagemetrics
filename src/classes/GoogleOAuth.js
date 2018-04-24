@@ -7,7 +7,6 @@ const TOKEN_PATH = 'credentials.json';
 const CLIENT_SECRETS = require('../../client_secret.json');
 
 module.exports = class GoogleOAuth {
-
   /**
    * @description Load the client secrets file, authorize the application and
    * then invoke the app callback function
@@ -16,8 +15,9 @@ module.exports = class GoogleOAuth {
    */
   static loadClientSecrets(callback) {
     // Authorize a client with credentials, then call the Google Sheets API.
-    console.log(CLIENT_SECRETS);
-    this.authorize(CLIENT_SECRETS, callback);  }
+    this.authorize(CLIENT_SECRETS, callback);
+  }
+
   /**
    * Create an OAuth2 client with the given credentials, and then execute the
    * given callback function.
@@ -30,7 +30,9 @@ module.exports = class GoogleOAuth {
 
     // Check if we have previously stored a token.
     fs.readFile(TOKEN_PATH, (err, token) => {
-      if (err) return this.getNewToken(oAuth2Client, callback);
+      if (err) {
+        return this.getNewToken(oAuth2Client, callback);
+      }
       oAuth2Client.setCredentials(JSON.parse(token));
       callback(oAuth2Client);
     });
@@ -55,11 +57,15 @@ module.exports = class GoogleOAuth {
     rl.question('Enter the code from that page here: ', (code) => {
       rl.close();
       oAuth2Client.getToken(code, (err, token) => {
-        if (err) return callback(err);
+        if (err) {
+          return callback(err);
+        }
         oAuth2Client.setCredentials(token);
         // Store the token to disk for later program executions
         fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
-          if (err) console.error(err);
+          if (err) {
+            console.error(err);
+          }
           console.log('Token stored to', TOKEN_PATH);
         });
         callback(oAuth2Client);

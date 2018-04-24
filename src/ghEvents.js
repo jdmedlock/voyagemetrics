@@ -8,7 +8,7 @@ const ACTIVITY_MANAGING = 1;    // Activities performed to manage the repo
 const ACTIVITY_DEVELOPING = 2;  // Activities directly related to active development
 const ACTIVITY_PUBLISHING = 3;  // Activities performed to publish an app
 
-const ghEventMetrics = [
+const ghEvents = [
   { event: 'CommitCommentEvent', title: 'Commit Comment', deprecated: false, weight: ACTIVITY_MANAGING },
   { event: 'CreateEvent', title: 'Create Repo/Branch/Tag', deprecated: false, weight: ACTIVITY_MANAGING },
   { event: 'DeleteEvent', title: 'Delete Branch or Tag', deprecated: false, weight: ACTIVITY_MANAGING },
@@ -49,4 +49,4 @@ const ghEventMetrics = [
 ];
 
 module.exports = { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
-  ACTIVITY_PUBLISHING, ghEventMetrics };
+  ACTIVITY_PUBLISHING, ghEvents };
