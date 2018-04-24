@@ -7,7 +7,6 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "npx webpack --config webpack.config.js",
     "generate": "node run.js"
   },
   "repository": {

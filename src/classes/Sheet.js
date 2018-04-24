@@ -2,24 +2,30 @@ var { google } = require('googleapis');
 var sheets = google.sheets('v4');
 
 module.exports = class Sheet {
+  /**
+   * @description Creates an instance of the Sheet class.
+   * @param {any} authClient
+   */
   constructor(authClient) {
+    this.spreadsheetProps = null;
+    this.maxSheets = 0;
+    this.sheets = [];
+    this.sheetProps = [];
+    this.sheetValues = [];
+  }
+
+  /**
+   * @description Create a new Google Sheet from properties of this instance
+   * of the Sheet object
+   * @param {Object} authClient Client authorization token
+   */
+  createSpreadsheet(authClient) {
     const request = {
       resource: {
-        "properties": {
-          "title": 'Voyage4 Team Metrics',
-          "locale": 'en',
-        },
+        "properties": this.spreadsheetProps,
         "sheets": [
           {
-            "properties": {
-              "sheetId": 1,
-              "title": 'Voyage4 Team Summary',
-              "index": 1,
-              "gridProperties": {
-                "rowCount": 2,
-                "columnCount": 2,
-              }           
-            },
+            "properties": this.sheetProps,
             "data": [
               {
                 "startRow": 0,
@@ -27,26 +33,14 @@ module.exports = class Sheet {
                 "rowData": [
                   {
                     "values": [
-                      {
-                        "userEnteredValue": { 
-                          "stringValue": 'cell 0-0'
-                        },
-                      },
-                      {
-                        "userEnteredValue": { 
-                          "stringValue": 'cell 0-1'
-                        },
-                      },
-                      {
-                        "userEnteredValue": { 
-                          "stringValue": 'cell 1-0'
-                        },
-                      },
-                      {
-                        "userEnteredValue": { 
-                          "stringValue": 'cell 1-1'
-                        },
-                      }
+                      { userEnteredValue: { stringValue: 'cell 0-0' } },
+                      { userEnteredValue: { stringValue: 'cell 0-1' } },
+                    ],
+                  },
+                  {
+                    "values": [
+                      { userEnteredValue: { stringValue: 'cell 1-0' } },
+                      { userEnteredValue: { stringValue: 'cell 1-1' } },
                     ],
                   }
                 ],
@@ -57,15 +51,68 @@ module.exports = class Sheet {
       },
       auth: authClient,
     };
-  
-    sheets.spreadsheets.create(request, function(err, response) {
+
+    sheets.spreadsheets.create(request, (err, response) => {
       if (err) {
         console.error(err);
         return;
       }
-  
-      // TODO: Change code below to process the `response` object:
-      console.log(JSON.stringify(response, null, 2));
     });
   }
+
+  setSheetProps(sheetIndex, properties) {
+    // Validate the input parameters
+    if (sheetIndex === undefined || sheetIndex === null ||
+      typeof sheetIndex !== 'number') {
+    throw new Error(`Invalid sheet association index: ${sheetIndex}`);
+    }
+    if (properties.sheetId === undefined || properties.sheetId === null ||
+        typeof properties.sheetId !== 'number') {
+      throw new Error(`Invalid sheet id: ${properties.sheetId}`);
+    }
+    if (properties.title === undefined || properties.title === null ||
+        typeof properties.title !== 'string') {
+      throw new Error(`Invalid sheet title: ${properties.title}`);
+    }
+    if (properties.index === undefined || properties.index === null ||
+        typeof properties.index !== 'number') {
+      throw new Error(`Invalid sheet index: ${properties.index}`);
+    }
+
+    this.sheetProps[sheetIndex].sheetId = properties.sheetId;
+    this.sheetProps[sheetIndex].title = properties.title;
+    this.sheetProps[sheetIndex].index = properties.index;
+  }
+
+  setSheetValues(sheetIndex, properties, values) {
+
+  }
+
+  /**
+   * @description Define the properties of the spreadsheet
+   * @param {Object} properties A key/value pair object defining the spreadsheet
+   * properties. Valid key/value pairs are:
+   * - title: String
+   * - locale: String
+   */
+  setSpreadsheetProps(properties, maxSheets) {
+    // Validate the input parameters
+    if (properties.title === undefined || properties.title === null ||
+        typeof properties.title !== 'string') {
+      throw new Error(`Invalid spreadsheet title: ${properties.title}`);
+    }
+    if (properties.locale === undefined || properties.locale === null ||
+        typeof properties.locale !== 'string') {
+      throw new Error(`Invalid spreadsheet locale: ${properties.title}`);
+    }
+    if (maxSheets === undefined || maxSheets === null ||
+      typeof maxSheets !== 'number') {
+    throw new Error(`Invalid maximum no. of sheets: ${maxSheets}`);
+  }
+
+    this.spreadsheetProps.title = properties.title;
+    this.spreadsheetProps.locale = properties.locale;
+    this.maxSheets = maxSheets;
+  }
+
 };

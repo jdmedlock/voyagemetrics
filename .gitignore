@@ -59,3 +59,4 @@ typings/
 
 # Google API files
 client_secret.json
+credentials.json

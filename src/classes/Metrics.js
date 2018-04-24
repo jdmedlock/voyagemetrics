@@ -1,7 +1,7 @@
 const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
-const eventJSON = require('/Users/jdmedlock/Downloads/voyage4_events_20180423.json');
+const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
 
 const NOT_FOUND = -1;
 
@@ -37,7 +37,7 @@ module.exports = class Metrics {
       }
       return 0;
     });
-  
+
     // Calculate the percentile rank for each team member. The percentile rank
     // is calculated as:
     //    (# scores lower than current score / total number of scores) * 100
@@ -126,7 +126,7 @@ module.exports = class Metrics {
     // Calculate and add the Percentile Rank to each team member
     this.calculatePercentileRank();
   }
-  
+
   /**
    * @description Find a matching entry in the Voyage admin array matching
    * the input GitHub account name..
@@ -139,7 +139,7 @@ module.exports = class Metrics {
       return element === actor;
     });
   }
-  
+
   /**
    * @description Find a matching event in the GitHub Event Metric array
    * which matches the input event.
@@ -153,7 +153,7 @@ module.exports = class Metrics {
         element.weight !== ACTIVITY_PASSIVE;
     });
   }
-  
+
   /**
    * @description Find a matching entry in the aggregate results array matching
    * the input team name and GitHub account name of a team member.

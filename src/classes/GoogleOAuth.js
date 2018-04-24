@@ -2,7 +2,7 @@ const fs = require('fs');
 const readline = require('readline');
 const { google } = require('googleapis');
 const OAuth2Client = google.auth.OAuth2;
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 const TOKEN_PATH = 'credentials.json';
 const CLIENT_SECRETS = require('../../client_secret.json');
 
