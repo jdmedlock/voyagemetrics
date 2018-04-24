@@ -1,10 +1,12 @@
 var { google } = require('googleapis');
 var sheets = google.sheets('v4');
 
-module.exports = class Sheet {
+module.exports = class GSheet {
   /**
-   * @description Creates an instance of the Sheet class.
-   * @param {any} authClient
+   * @description Creates an instance of the GSheet class. A GSheet represents
+   * a Google Sheet which is a single Google Sheet containing one or more
+   * individual sheets (tabs).
+   * @param {any} authClient Client authorization token
    */
   constructor(authClient) {
     this.spreadsheetProps = null;
@@ -59,8 +61,17 @@ module.exports = class Sheet {
       }
     });
   }
-
-  setSheetProps(sheetIndex, properties) {
+/**
+ * @description Add a new set of properties to a sheet
+ * @param {Number} sheetIndex The sheet number, relative to zero, these properties
+ * are associated with.
+ * @param {Object} properties A key/value pair object containing the following
+ * properties for the sheet:
+ * - sheetId: Number
+ * - title: String
+ * - index: Number
+ */
+setSheetProps(sheetIndex, properties) {
     // Validate the input parameters
     if (sheetIndex === undefined || sheetIndex === null ||
       typeof sheetIndex !== 'number') {
