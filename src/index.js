@@ -3,7 +3,7 @@ const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('./ghEvents');
 const goauth = require('./classes/GoogleOAuth');
 const Metrics = require('./classes/Metrics');
-const Sheet = require('./classes/Sheet');
+const GSheet = require('./classes/GSheet');
 
 /**
  * @description Write the aggregated results to a CSV file
@@ -34,7 +34,7 @@ function writeCSV(metrics) {
       return outputValues;
     }, '');
     metricValues = metricValues + ', ' +
-      element.metrics[metrics.TOTALS_INDEX] + ', ' + 
+      element.metrics[metrics.TOTALS_INDEX] + ', ' +
       element.metrics[metrics.PERCENTILE_RANK_INDEX];
     console.log(element.tier+ ', ' + element.team + ', ' +
       element.name + ', ' + element.teamActive + ', ' +
@@ -51,8 +51,24 @@ function writeCSV(metrics) {
     metrics.calculateMetrics();
 
     // Write the results as a CSV file
-    writeCSV(metrics);
+    // writeCSV(metrics);
 
-    const sheet = new Sheet(auth);
+    const gsheet = new GSheet(auth);
+    gsheet.setSpreadsheetProps({
+      title: 'Chingu Voyage4 Metrics',
+      locale: 'en',
+    }, 0);
+    gsheet.setSheetProps(0, {
+      sheetId: 1,
+      title: 'Voyage4 Teams & Participants',
+      index: 0,
+      rowCount: 0,
+      columnCount: 0,
+    });
+    // TODO: Convert metrics.aggregateResults array to a simple array
+    gsheet.setSheetValues(0, {
+      startRow: 0,
+      startColumn: 0,
+    }, metrics);
   });
 }());

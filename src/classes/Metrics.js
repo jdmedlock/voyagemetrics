@@ -17,10 +17,10 @@ module.exports = class Metrics {
     //    `name:` defines the GitHub account name of the individual the metrics
     //            are related to
     //    `teamActive:` true if the team is active or false if it is inactive
-    //    `metrics:` holds the
-    // team members. Rows contain the team or team member name, the metric type
-    // identifying if its for a team or team member, and the remaining
-    // columns contains the accumulated count for a specific metric.
+    //    `metrics:` holds the results for each team member. Rows contain the
+    //            team or team member name, the metric type identifying if it
+    //            is for a team or team member, and the remaining columns
+    //            contain the accumulated count for a specific metric.
     this.aggregateResults = [];
     this.TOTALS_INDEX = ghEvents.length;
     this.PERCENTILE_RANK_INDEX = this.TOTALS_INDEX + 1;

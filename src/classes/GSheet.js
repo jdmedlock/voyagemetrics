@@ -13,6 +13,7 @@ module.exports = class GSheet {
     this.maxSheets = 0;
     this.sheets = [];
     this.sheetProps = [];
+    this.sheetValueProps = [];
     this.sheetValues = [];
   }
 
@@ -22,6 +23,40 @@ module.exports = class GSheet {
    * @param {Object} authClient Client authorization token
    */
   createSpreadsheet(authClient) {
+    // Build the rowData object used to pass sheet data to Google Sheets.
+    // Transform the data values in `this.sheetValues` for each sheet to
+    // be added to this spreadsheet. Simple data values are transformed into
+    //  {
+    //    "values": [   // Row 0
+    //      { userEnteredValue: { stringValue: 'cell 0-0' } },
+    //      { userEnteredValue: { stringValue: 'cell 0-1' } },
+    //    ],
+    //    "values": [   // Row 1
+    //      { userEnteredValue: { stringValue: 'cell 0-0' } },
+    //      { userEnteredValue: { stringValue: 'cell 0-1' } },
+    //    ],
+    //  },
+    //
+    // TODO: enhance to support multiple sheets. Currently supports a single sheet
+    const rowData = this.sheetValues[0].map((row, rowIndex) => {
+      return '"{ values": [ ' +
+        row.map((cellValue, columnIndex) => {
+          let valueType = '';
+          switch (typeof cellValue) {
+            case 'string':
+              valueType = 'stringValue: ';
+              break;
+            case 'number':
+              valueType = 'numberValue: ';
+              break;
+            default:
+              throw new Error(`Unexpected cell value type: ${typeof cellValue}`);
+          }
+          return `{ userEneredValue: { ${valueType}: '${cellValue}' } },`;
+        }) + '], }, ';
+    });
+
+    // Build the Google Sheets request object
     const request = {
       resource: {
         "properties": this.spreadsheetProps,
@@ -30,22 +65,9 @@ module.exports = class GSheet {
             "properties": this.sheetProps,
             "data": [
               {
-                "startRow": 0,
-                "startColumn": 0,
-                "rowData": [
-                  {
-                    "values": [
-                      { userEnteredValue: { stringValue: 'cell 0-0' } },
-                      { userEnteredValue: { stringValue: 'cell 0-1' } },
-                    ],
-                  },
-                  {
-                    "values": [
-                      { userEnteredValue: { stringValue: 'cell 1-0' } },
-                      { userEnteredValue: { stringValue: 'cell 1-1' } },
-                    ],
-                  }
-                ],
+                "startRow": this.startRow,
+                "startColumn": this.startColumn,
+                "rowData": [ rowData ],
               }
             ],
           }
@@ -71,6 +93,8 @@ module.exports = class GSheet {
    * - sheetId: Number
    * - title: String
    * - index: Number
+   * - rowCount: Number
+   * - columnCount: Number
    */
   setSheetProps(sheetIndex, properties) {
     // Validate the input parameters
@@ -81,7 +105,7 @@ module.exports = class GSheet {
     if (properties.sheetId === undefined || properties.sheetId === null ||
         typeof properties.sheetId !== 'number') {
       throw new Error(`Invalid sheet id: ${properties.sheetId}`);
-    }           
+    }
     if (properties.title === undefined || properties.title === null ||
         typeof properties.title !== 'string') {
       throw new Error(`Invalid sheet title: ${properties.title}`);
@@ -90,10 +114,20 @@ module.exports = class GSheet {
         typeof properties.index !== 'number') {
       throw new Error(`Invalid sheet index: ${properties.index}`);
     }
+    if (properties.rowCount === undefined || properties.rowCount === null ||
+        typeof properties.rowCount !== 'number') {
+      throw new Error(`Invalid sheet row count: ${properties.rowCount}`);
+    }
+    if (properties.columnCount === undefined || properties.columnCount === null ||
+        typeof properties.columnCount !== 'number') {
+      throw new Error(`Invalid sheet column count: ${properties.columnCount}`);
+    }
 
     this.sheetProps[sheetIndex].sheetId = properties.sheetId;
     this.sheetProps[sheetIndex].title = properties.title;
     this.sheetProps[sheetIndex].index = properties.index;
+    this.sheetProps[sheetIndex].rowCount = properties.rowCount;
+    this.sheetProps[sheetIndex].columnCount = properties.columnCount;
   }
 
   /**
@@ -103,23 +137,12 @@ module.exports = class GSheet {
    * - startRow: Number
    * - startColumn: Number
    * @param {Array} values An array of rows, each of which contains an array
-   * of column values in the following format. Value types are defined 
-   * in the Google Sheets API V4 documentation. 
-   * 
+   * of column values in the following format.
+   *
    *  [
-   *    {
-   *     "values": [    // Row 0 values
-   *       { userEnteredValue: { stringValue: 'cell 0-0' } },
-   *       { userEnteredValue: { numberValue: 10         } },
-   *       ...
-   *     ],
-   *     "values": [    // Row 1 values
-   *       { userEnteredValue: { stringValue: 'cell 0-0' } },
-   *       { userEnteredValue: { numberValue: 10         } },
-   *       ...
-   *     ],
-   *     ...
-   *    },
+   *    [column 0 value, column 1 value, column 2 value,...], // Row 0
+   *    [column 0 value, column 1 value, column 2 value,...], // Row 1
+   *    ...
    *  ]
    */
   setSheetValues(sheetIndex, properties, values) {
@@ -128,7 +151,19 @@ module.exports = class GSheet {
         typeof sheetIndex !== 'number') {
       throw new Error(`Invalid sheet association index: ${sheetIndex}`);
     }
+    if (properties.startRow === undefined || properties.startRow === null ||
+        typeof properties.startRow !== 'number') {
+      throw new Error(`Invalid start row: ${properties.startRow}`);
+    }
+    if (properties.startColumn === undefined || properties.startColumn === null ||
+        typeof properties.startColumn !== 'number') {
+      throw new Error(`Invalid start column: ${properties.startColumn}`);
+    }
 
+    this.sheetValueProps[sheetIndex].startRow = properties.startRow;
+    this.sheetValueProps[sheetIndex].startColumn = properties.startColumn;
+    // Save a reference to the array containing the data values
+    this.sheet[sheetIndex].values = values;
   }
 
   /**
