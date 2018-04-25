@@ -61,26 +61,27 @@ module.exports = class GSheet {
       }
     });
   }
-/**
- * @description Add a new set of properties to a sheet
- * @param {Number} sheetIndex The sheet number, relative to zero, these properties
- * are associated with.
- * @param {Object} properties A key/value pair object containing the following
- * properties for the sheet:
- * - sheetId: Number
- * - title: String
- * - index: Number
- */
-setSheetProps(sheetIndex, properties) {
+
+  /**
+   * @description Add a new set of properties to a sheet
+   * @param {Number} sheetIndex The sheet number, relative to zero, these properties
+   * are associated with.
+   * @param {Object} properties A key/value pair object containing the following
+   * properties for the sheet:
+   * - sheetId: Number
+   * - title: String
+   * - index: Number
+   */
+  setSheetProps(sheetIndex, properties) {
     // Validate the input parameters
     if (sheetIndex === undefined || sheetIndex === null ||
-      typeof sheetIndex !== 'number') {
-    throw new Error(`Invalid sheet association index: ${sheetIndex}`);
+        typeof sheetIndex !== 'number') {
+      throw new Error(`Invalid sheet association index: ${sheetIndex}`);
     }
     if (properties.sheetId === undefined || properties.sheetId === null ||
         typeof properties.sheetId !== 'number') {
       throw new Error(`Invalid sheet id: ${properties.sheetId}`);
-    }
+    }           
     if (properties.title === undefined || properties.title === null ||
         typeof properties.title !== 'string') {
       throw new Error(`Invalid sheet title: ${properties.title}`);
@@ -95,7 +96,38 @@ setSheetProps(sheetIndex, properties) {
     this.sheetProps[sheetIndex].index = properties.index;
   }
 
+  /**
+   * @description Set the data values for a sheet (tab) in the spreadsheet.
+   * @param {Number} sheetIndex Sheet number within the spreadsheet
+   * @param {Object} properties Properties of the data:
+   * - startRow: Number
+   * - startColumn: Number
+   * @param {Array} values An array of rows, each of which contains an array
+   * of column values in the following format. Value types are defined 
+   * in the Google Sheets API V4 documentation. 
+   * 
+   *  [
+   *    {
+   *     "values": [    // Row 0 values
+   *       { userEnteredValue: { stringValue: 'cell 0-0' } },
+   *       { userEnteredValue: { numberValue: 10         } },
+   *       ...
+   *     ],
+   *     "values": [    // Row 1 values
+   *       { userEnteredValue: { stringValue: 'cell 0-0' } },
+   *       { userEnteredValue: { numberValue: 10         } },
+   *       ...
+   *     ],
+   *     ...
+   *    },
+   *  ]
+   */
   setSheetValues(sheetIndex, properties, values) {
+    // Validate the input parameters
+    if (sheetIndex === undefined || sheetIndex === null ||
+        typeof sheetIndex !== 'number') {
+      throw new Error(`Invalid sheet association index: ${sheetIndex}`);
+    }
 
   }
 
