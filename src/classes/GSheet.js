@@ -38,33 +38,32 @@ module.exports = class GSheet {
     //  },
     //
     // TODO: enhance to support multiple sheets. Currently supports a single sheet
-    const rowData = this.sheetValues[0].map((row, rowIndex) => {
-      return '{ "values": [ ' +
-        row.map((cellValue, columnIndex) => {
-          let value = null;
-          let valueType = '';
-          switch (typeof cellValue) {
-            case 'boolean':
-              valueType = 'boolValue';
-              value = cellValue;
-              break;
-            case 'number':
-              valueType = 'numberValue';
-              value = cellValue;
-              break;
-            case 'string':
-              valueType = 'stringValue';
-              value = `"${cellValue}"`;
-              break;
-            default:
-              console.log('cellValue: ', cellValue);
-              const temp = typeof cellValue;
-              console.log('temp: ', temp);
-              throw new Error(`Unexpected cell value type: ${typeof cellValue}`);
-          }
-          return `{ "userEnteredValue": { "${valueType}": ${value} } }`;
-        }) + '], } ';
+    const rowData = {};
+    this.sheetValues[0].forEach((row) => {
+      rowData.values = [];
+      row.forEach((cellValue) => {
+        const cell = { userEnteredValue: {} };
+        switch (typeof cellValue) {
+          case 'boolean':
+            cell.userEnteredValue.boolValue = cellValue;
+            rowData.values.push(cell);
+            break;
+          case 'number':
+          cell.userEnteredValue.numberValue = cellValue;
+            rowData.values.push(cell);
+            break;
+          case 'string':
+          cell.userEnteredValue.stringValue = cellValue.toString();
+            rowData.values.push(cell);
+            console.log('stringValue rowData.values: ', JSON.stringify(rowData, null, 2));
+            break;
+          default:
+            throw new Error(`Unexpected cell value type: ${typeof cellValue}`);
+        }
+      });
     });
+
+    console.log('rowData: ', JSON.stringify(rowData, null, 2));
 
     // Build the Google Sheets request object
     const request = {
@@ -86,13 +85,13 @@ module.exports = class GSheet {
       auth: authClient,
     };
 
-    console.log('request: ', request);
+    console.log('request: ', JSON.stringify(request,null,2));
 
     sheets.spreadsheets.create(request, (err, response) => {
       if (err) {
         console.error(err);
       }
-      console.log('\nresponse: ', response);
+      console.log('\nresponse.data: ', response.data);
     });
   }
 
