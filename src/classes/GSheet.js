@@ -39,6 +39,7 @@ module.exports = class GSheet {
     //
     // TODO: enhance to support multiple sheets. Currently supports a single sheet
     const rowData = {};
+    console.log('No. Rows: ', this.sheetValues[0].length);
     this.sheetValues[0].forEach((row) => {
       rowData.values = [];
       row.forEach((cellValue) => {
@@ -55,7 +56,6 @@ module.exports = class GSheet {
           case 'string':
           cell.userEnteredValue.stringValue = cellValue.toString();
             rowData.values.push(cell);
-            console.log('stringValue rowData.values: ', JSON.stringify(rowData, null, 2));
             break;
           default:
             throw new Error(`Unexpected cell value type: ${typeof cellValue}`);
@@ -63,15 +63,17 @@ module.exports = class GSheet {
       });
     });
 
-    console.log('rowData: ', JSON.stringify(rowData, null, 2));
-
     // Build the Google Sheets request object
     const request = {
       resource: {
         "properties": this.spreadsheetProps,
         "sheets": [
           {
-            "properties": this.sheetProps,
+            "properties": {
+              "sheetId": this.sheetProps[0].sheetId,
+              "title": this.sheetProps[0].title,
+              "index": this.sheetProps[0].index,
+            },
             "data": [
               {
                 "startRow": this.startRow,
@@ -85,7 +87,7 @@ module.exports = class GSheet {
       auth: authClient,
     };
 
-    console.log('request: ', JSON.stringify(request,null,2));
+    console.log('request:\n', JSON.stringify(request, null, 2));
 
     sheets.spreadsheets.create(request, (err, response) => {
       if (err) {

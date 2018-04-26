@@ -49,7 +49,7 @@ function writeCSV(metrics) {
   goauth.loadClientSecrets((auth) => {
     const metrics = new Metrics();
     metrics.calculateMetrics();
-    
+
     // TODO: Convert metrics.aggregateResults array to a simple array
     const results = [];
     metrics.getAggregateResults().forEach((resultRow, rowIndex) => {
@@ -76,8 +76,8 @@ function writeCSV(metrics) {
       sheetId: 1,
       title: 'Voyage4 Teams & Participants',
       index: 0,
-      rowCount: 0,
-      columnCount: 0,
+      rowCount: metrics.getAggregateResults().length,
+      columnCount: 26,
     });
     gsheet.setSheetValues(0, {
       startRow: 0,
