@@ -49,6 +49,20 @@ function writeCSV(metrics) {
   goauth.loadClientSecrets((auth) => {
     const metrics = new Metrics();
     metrics.calculateMetrics();
+    
+    // TODO: Convert metrics.aggregateResults array to a simple array
+    const results = [];
+    metrics.getAggregateResults().forEach((resultRow, rowIndex) => {
+      const intermediateResults = Object.values(resultRow);
+      let columnValues = [];
+      for (let i = 0; i < 5; i += 1) {
+        columnValues.push(intermediateResults[i]);
+      }
+      for (let i = 0; i < intermediateResults[5].length; i += 1) {
+        columnValues.push(intermediateResults[5][i]);
+      }
+      results.push(columnValues);
+    });
 
     // Write the results as a CSV file
     // writeCSV(metrics);
@@ -65,10 +79,10 @@ function writeCSV(metrics) {
       rowCount: 0,
       columnCount: 0,
     });
-    // TODO: Convert metrics.aggregateResults array to a simple array
     gsheet.setSheetValues(0, {
       startRow: 0,
       startColumn: 0,
-    }, metrics);
+    }, results);
+    gsheet.createSpreadsheet(auth);
   });
 }());

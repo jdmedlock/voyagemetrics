@@ -9,7 +9,7 @@ module.exports = class GSheet {
    * @param {any} authClient Client authorization token
    */
   constructor(authClient) {
-    this.spreadsheetProps = null;
+    this.spreadsheetProps = {};
     this.maxSheets = 0;
     this.sheets = [];
     this.sheetProps = [];
@@ -39,21 +39,31 @@ module.exports = class GSheet {
     //
     // TODO: enhance to support multiple sheets. Currently supports a single sheet
     const rowData = this.sheetValues[0].map((row, rowIndex) => {
-      return '"{ values": [ ' +
+      return '{ "values": [ ' +
         row.map((cellValue, columnIndex) => {
+          let value = null;
           let valueType = '';
           switch (typeof cellValue) {
-            case 'string':
-              valueType = 'stringValue: ';
+            case 'boolean':
+              valueType = 'boolValue';
+              value = cellValue;
               break;
             case 'number':
-              valueType = 'numberValue: ';
+              valueType = 'numberValue';
+              value = cellValue;
+              break;
+            case 'string':
+              valueType = 'stringValue';
+              value = `"${cellValue}"`;
               break;
             default:
+              console.log('cellValue: ', cellValue);
+              const temp = typeof cellValue;
+              console.log('temp: ', temp);
               throw new Error(`Unexpected cell value type: ${typeof cellValue}`);
           }
-          return `{ userEneredValue: { ${valueType}: '${cellValue}' } },`;
-        }) + '], }, ';
+          return `{ "userEnteredValue": { "${valueType}": ${value} } }`;
+        }) + '], } ';
     });
 
     // Build the Google Sheets request object
@@ -76,11 +86,13 @@ module.exports = class GSheet {
       auth: authClient,
     };
 
+    console.log('request: ', request);
+
     sheets.spreadsheets.create(request, (err, response) => {
       if (err) {
         console.error(err);
-        return;
       }
+      console.log('\nresponse: ', response);
     });
   }
 
@@ -123,6 +135,7 @@ module.exports = class GSheet {
       throw new Error(`Invalid sheet column count: ${properties.columnCount}`);
     }
 
+    this.sheetProps[sheetIndex] = {};
     this.sheetProps[sheetIndex].sheetId = properties.sheetId;
     this.sheetProps[sheetIndex].title = properties.title;
     this.sheetProps[sheetIndex].index = properties.index;
@@ -160,10 +173,12 @@ module.exports = class GSheet {
       throw new Error(`Invalid start column: ${properties.startColumn}`);
     }
 
+    this.sheetValueProps[sheetIndex] = {};
     this.sheetValueProps[sheetIndex].startRow = properties.startRow;
     this.sheetValueProps[sheetIndex].startColumn = properties.startColumn;
+
     // Save a reference to the array containing the data values
-    this.sheet[sheetIndex].values = values;
+    this.sheetValues[sheetIndex] = values;
   }
 
   /**

@@ -1,7 +1,7 @@
 const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
-const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
+const eventJSON = require('/Users/jdmedlock/Downloads/voyage4_events_20180423.json');
 
 const NOT_FOUND = -1;
 
