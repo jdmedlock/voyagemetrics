@@ -1,7 +1,7 @@
 const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
-const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
+const eventJSON = require('/Users/jdmedlock/Downloads/voyage4_events_20180423.json');
 
 const NOT_FOUND = -1;
 
@@ -22,6 +22,15 @@ module.exports = class Metrics {
     //            is for a team or team member, and the remaining columns
     //            contain the accumulated count for a specific metric.
     this.aggregateResults = [];
+
+    // Calculate the number of qualifying events;
+    this.qualifyingEventCount = ghEvents.reduce((eventCount, element) => {
+      return this.findQualifyingEvent(element.event) === NOT_FOUND ? eventCount
+        : eventCount += 1;
+    }, 0) + 2;
+
+    this.NO_STATIC_COLUMNS = 5;
+    this.NO_COLUMNS = this.NO_STATIC_COLUMNS + this.qualifyingEventCount;
     this.TOTALS_INDEX = ghEvents.length;
     this.PERCENTILE_RANK_INDEX = this.TOTALS_INDEX + 1;
   }
@@ -70,22 +79,23 @@ module.exports = class Metrics {
         let eventActor = team.repo.events[key].actor;
         const eventName = team.repo.events[key].type;
         const eventIndex = this.findQualifyingEvent(eventName);
+
         const activityDate = team.repo.events[key].created_at;
 
         // Determine if the actor is one of the Organization administrators
-        const isAdmin = this.findAdminByActor(eventActor) === NOT_FOUND;
+        const isAdmin = this.findAdminByActor(eventActor) !== NOT_FOUND;
         if (eventIndex !== NOT_FOUND) {
           // Search the aggregate results array to increment the count for the
           // current team, user, and event. Push the user onto the array if they
           // haven't been added yet.
           const memberIndex = this.findResultByActor(teamName, eventActor);
-          if (isAdmin) {
+          if (!isAdmin) {
             if (memberIndex === NOT_FOUND) {
               isTeamActive = true;
               memberMetrics = ghEvents.map((element) => { return 0; });
               memberMetrics.push(0); // Totals column
               memberMetrics.push(0); // Percentile Rank column
-              memberMetrics[eventIndex] += ghEvents[eventIndex].weight;
+                   memberMetrics[eventIndex] += ghEvents[eventIndex].weight;
               memberMetrics[this.TOTALS_INDEX] += ghEvents[eventIndex].weight;
               this.aggregateResults.push({
                 tier: tierName,
@@ -144,7 +154,7 @@ module.exports = class Metrics {
    * @description Find a matching event in the GitHub Event Metric array
    * which matches the input event.
    * @param {String} eventName Input event name
-   * @returns {Number} index of the matching event
+   * @returns {Number} Index of the matching event
    */
   findQualifyingEvent(eventName) {
     "use strict";
@@ -168,11 +178,23 @@ module.exports = class Metrics {
     });
   }
 
+  getAggregateResultHeadings() {
+    const metricHeadings = ghEvents.reduce((headings, element) => {
+      if (!element.deprecated && element.weight !== ACTIVITY_PASSIVE) {
+        headings.push(element.title);
+        return headings;
+      }
+      return headings;
+    }, []);
+    return ['Tier', 'Team', 'Name', 'Team Active', 'Last Actor Activity',
+      ...metricHeadings, 'Total Score', 'Percentile Rank'];
+  }
+
   /**
-   * @description Retrieve the aggregated results
+   * @description Retrieve aggregated results 
    * @returns {Object} Aggregate results array
    */
-  getAggregateResults() {
+  getAggregateResultValues() {
     return this.aggregateResults;
   }
 };
