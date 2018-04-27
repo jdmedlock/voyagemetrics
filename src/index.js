@@ -1,30 +1,7 @@
 
-const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
-  ACTIVITY_PUBLISHING, ghEvents } = require('./ghEvents');
 const goauth = require('./classes/GoogleOAuth');
 const Metrics = require('./classes/Metrics');
 const GSheet = require('./classes/GSheet');
-
-/**
- * @description Write the aggregated results to a CSV file
- */
-function writeCSV(metrics) {
-  // Write the aggregated results as a CSV file
-  const columnHeadings = metrics.getAggregateResultHeadings();
-  const currentDate = new Date();
-  console.log(`Extraction date: ${currentDate.toLocaleDateString('en-US')} \
-    ${','.repeat(columnHeadings.length-1)}`);
-  console.log(columnHeadings);
- 
-  metrics.getAggregateResultValues().forEach((element) => {
-    let metricValues = ghEvents.reduce((outputValues, metricColumn, metricIndex) => {
-        return outputValues.concat(', ', element.metrics[metricIndex]);
-    }, '');
-    console.log(element.tier+ ', ' + element.team + ', ' +
-      element.name + ', ' + element.teamActive + ', ' +
-      element.lastActorActivityDt + metricValues);
-  });
-}
 
 (function() {
   "use strict";
@@ -33,21 +10,7 @@ function writeCSV(metrics) {
   goauth.loadClientSecrets((auth) => {
     const metrics = new Metrics();
     metrics.calculateMetrics();
-    writeCSV(metrics);
-
-    // Convert metrics.aggregateResults array to a simple array
-    const results = [];
-    metrics.getAggregateResultValues().forEach((resultRow, rowIndex) => {
-      const intermediateResults = Object.values(resultRow);
-      let columnValues = [];
-      for (let i = 0; i < 5; i += 1) {
-        columnValues.push(intermediateResults[i]);
-      }
-      for (let i = 0; i < intermediateResults[5].length; i += 1) {
-        columnValues.push(intermediateResults[5][i]);
-      }
-      results.push(columnValues);
-    });
+    metrics.writeCSV();
 
     // Create a Google Sheet containing the metrics
     const gsheet = new GSheet(auth);
@@ -65,7 +28,7 @@ function writeCSV(metrics) {
     gsheet.setSheetValues(0, {
       startRow: 0,
       startColumn: 0,
-    }, results);
+    }, metrics.getAggregateResultValues(true));
     gsheet.createSpreadsheet(auth);
   });
 }());
