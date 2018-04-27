@@ -40,7 +40,7 @@ module.exports = class GSheet {
     // TODO: enhance to support multiple sheets. Currently supports a single sheet
     const rowData = {};
     console.log('No. Rows: ', this.sheetValues[0].length);
-    this.sheetValues[0].forEach((row) => {
+    this.sheetValues[0].forEach((row) => { 
       rowData.values = [];
       row.forEach((cellValue) => {
         const cell = { userEnteredValue: {} };
@@ -50,11 +50,11 @@ module.exports = class GSheet {
             rowData.values.push(cell);
             break;
           case 'number':
-          cell.userEnteredValue.numberValue = cellValue;
+            cell.userEnteredValue.numberValue = cellValue;
             rowData.values.push(cell);
             break;
           case 'string':
-          cell.userEnteredValue.stringValue = cellValue.toString();
+            cell.userEnteredValue.stringValue = cellValue.toString();
             rowData.values.push(cell);
             break;
           default:
@@ -62,6 +62,8 @@ module.exports = class GSheet {
         }
       });
     });
+
+    console.log('rowData:\n', JSON.stringify(rowData, null, 2));
 
     // Build the Google Sheets request object
     const request = {

@@ -9,23 +9,6 @@ const GSheet = require('./classes/GSheet');
  * @description Write the aggregated results to a CSV file
  */
 function writeCSV(metrics) {
-  /*
-  // Determine which column headings are to be used
-  const metricHeadings = ghEvents.reduce((headings, element) => {
-    if (!element.deprecated && element.weight !== ACTIVITY_PASSIVE) {
-      headings.push(element.title);
-      return headings;
-    }
-    return headings;
-  }, []);
-
-  // Write the aggregated results as a CSV file
-  const currentDate = new Date();
-  console.log(`Extraction date: ${currentDate.toLocaleDateString('en-US')} \
-    ,,,,,,${','.repeat(metricHeadings.length)}`);
-  console.log('Tier, Team, Name, Team Active, Last Actor Activity, ',
-    metricHeadings + ', Total Score, Percentile Rank');
-  */
   // Write the aggregated results as a CSV file
   const columnHeadings = metrics.getAggregateResultHeadings();
   const currentDate = new Date();
@@ -37,11 +20,6 @@ function writeCSV(metrics) {
     let metricValues = ghEvents.reduce((outputValues, metricColumn, metricIndex) => {
         return outputValues.concat(', ', element.metrics[metricIndex]);
     }, '');
-    /*
-    metricValues = metricValues + ', ' +
-      element.metrics[metrics.TOTALS_INDEX] + ', ' +
-      element.metrics[metrics.PERCENTILE_RANK_INDEX];
-    */
     console.log(element.tier+ ', ' + element.team + ', ' +
       element.name + ', ' + element.teamActive + ', ' +
       element.lastActorActivityDt + metricValues);

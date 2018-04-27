@@ -24,15 +24,12 @@ module.exports = class Metrics {
     this.aggregateResults = [];
 
     // Calculate the number of qualifying events;
-    this.qualifyingEventCount = ghEvents.reduce((eventCount, element) => {
-      return this.findQualifyingEvent(element.event) === NOT_FOUND ? eventCount
-        : eventCount += 1;
-    }, 0) + 2;
+    this.qualifyingEventCount = ghEvents.length + 2;
 
     this.NO_STATIC_COLUMNS = 5;
     this.NO_COLUMNS = this.NO_STATIC_COLUMNS + this.qualifyingEventCount;
-    this.TOTALS_INDEX = ghEvents.length;
-    this.PERCENTILE_RANK_INDEX = this.TOTALS_INDEX + 1;
+    this.TOTALS_INDEX = this.qualifyingEventCount - 2;
+    this.PERCENTILE_RANK_INDEX = this.TOTALS_INDEX - 1;
   }
 
   calculatePercentileRank() {
@@ -157,7 +154,6 @@ module.exports = class Metrics {
    * @returns {Number} Index of the matching event
    */
   findQualifyingEvent(eventName) {
-    "use strict";
     return ghEvents.findIndex((element) => {
       return element.event === eventName && element.deprecated === false &&
         element.weight !== ACTIVITY_PASSIVE;
@@ -172,12 +168,16 @@ module.exports = class Metrics {
    * @returns {Number} index of the matching event
    */
   findResultByActor(teamName, actor) {
-    "use strict";
     return this.aggregateResults.findIndex((element) => {
       return element.team === teamName && element.name === actor;
     });
   }
 
+  /**
+   * @description Return an array of column headings excluding those for 
+   * deprecated and passive events.
+   * @returns {String[]} Array of column headings
+   */
   getAggregateResultHeadings() {
     const metricHeadings = ghEvents.reduce((headings, element) => {
       if (!element.deprecated && element.weight !== ACTIVITY_PASSIVE) {
