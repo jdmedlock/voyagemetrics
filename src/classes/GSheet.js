@@ -39,7 +39,6 @@ module.exports = class GSheet {
     //
     // TODO: enhance to support multiple sheets. Currently supports only a single sheet
     const rowData = [];
-    console.log('No. Rows: ', this.sheetValues[0].length);
     this.sheetValues[0].forEach((row) => {
       let rowValues = [];
       row.forEach((cellValue, rowIndex) => {
@@ -63,8 +62,6 @@ module.exports = class GSheet {
       });
       rowData.push({values: rowValues});
     });
-
-    console.log('rowData:\n', JSON.stringify(rowData, null, 2));
 
     // Build the Google Sheets request object
     const request = {

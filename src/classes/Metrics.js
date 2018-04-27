@@ -1,7 +1,7 @@
 const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
-const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
+const eventJSON = require('/Users/jdmedlock/Downloads/voyage4_events_20180423.json');
 
 const NOT_FOUND = -1;
 
@@ -26,19 +26,17 @@ module.exports = class Metrics {
     // Calculate the number of qualifying events;
     this.qualifyingEventCount = ghEvents.length + 2;
 
-    this.NO_STATIC_COLUMNS = 5;
+    this.NO_STATIC_COLUMNS = 7;
     this.NO_COLUMNS = this.NO_STATIC_COLUMNS + this.qualifyingEventCount;
-    this.TOTALS_INDEX = this.qualifyingEventCount - 2;
-    this.PERCENTILE_RANK_INDEX = this.TOTALS_INDEX + 1;
   }
 
   calculatePercentileRank() {
     // Sort the aggregated results in decending sequence by the total score
     this.aggregateResults.sort((a,b) => {
-      if (a.metrics[this.TOTALS_INDEX] > b.metrics[this.TOTALS_INDEX]) {
+      if (a.totalScore > b.totalScore) {
         return -1;
       }
-      if (a.metrics[this.TOTALS_INDEX] < b.metrics[this.TOTALS_INDEX]) {
+      if (a.totalScore < b.totalScore) {
         return 1;
       }
       return 0;
@@ -50,8 +48,7 @@ module.exports = class Metrics {
     const totalNoScores = this.aggregateResults.length;
     this.aggregateResults.map((entry, entryIndex) => {
       const noLowerScores = totalNoScores - (entryIndex - 1);
-      entry.metrics[this.PERCENTILE_RANK_INDEX] =
-        ((noLowerScores / totalNoScores) * 100).toFixed(2);
+      entry.percentileRank = ((noLowerScores / totalNoScores) * 100).toFixed(2);
       return entry;
     });
   }
@@ -76,7 +73,6 @@ module.exports = class Metrics {
         let eventActor = team.repo.events[key].actor;
         const eventName = team.repo.events[key].type;
         const eventIndex = this.findQualifyingEvent(eventName);
-
         const activityDate = team.repo.events[key].created_at;
 
         // Determine if the actor is one of the Organization administrators
@@ -90,16 +86,15 @@ module.exports = class Metrics {
             if (memberIndex === NOT_FOUND) {
               isTeamActive = true;
               memberMetrics = ghEvents.map((element) => { return 0; });
-              memberMetrics.push(0); // Totals column
-              memberMetrics.push(0); // Percentile Rank column
-                   memberMetrics[eventIndex] += ghEvents[eventIndex].weight;
-              memberMetrics[this.TOTALS_INDEX] += ghEvents[eventIndex].weight;
+              memberMetrics[eventIndex] += ghEvents[eventIndex].weight;
               this.aggregateResults.push({
                 tier: tierName,
                 team: teamName,
                 name: eventActor,
                 teamActive: true,
                 lastActorActivityDt: activityDate.slice(0,10),
+                totalScore: ghEvents[eventIndex].weight,
+                percentileRank: 0,
                 metrics: memberMetrics,
               });
             } else {
@@ -110,7 +105,7 @@ module.exports = class Metrics {
                 this.aggregateResults[memberIndex].lastActorActivityDt = activityDate.slice(0,10);
               }
               this.aggregateResults[memberIndex].metrics[eventIndex] += ghEvents[eventIndex].weight;
-              this.aggregateResults[memberIndex].metrics[this.TOTALS_INDEX] += ghEvents[eventIndex].weight;
+              this.aggregateResults[memberIndex].totalScore += ghEvents[eventIndex].weight;
             }
           }
         }
@@ -126,6 +121,8 @@ module.exports = class Metrics {
           name: '*** inactive ***',
           teamActive: false,
           lastActorActivityDt: '1900-01-01',
+          totalScore: 0,
+          percentileRank: 0,
           metrics: memberMetrics,
         });
       }
@@ -184,7 +181,7 @@ module.exports = class Metrics {
       return headings;
     }, []);
     return ['Tier', 'Team', 'Name', 'Team Active', 'Last Actor Activity',
-      ...metricHeadings, 'Total Score', 'Percentile Rank'];
+      'Total Score', 'Percentile Rank', ...metricHeadings];
   }
 
   /**
