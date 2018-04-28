@@ -87,8 +87,6 @@ module.exports = class GSheet {
       auth: authClient,
     };
 
-    console.log('request:\n', JSON.stringify(request, null, 2));
-
     sheets.spreadsheets.create(request, (err, response) => {
       if (err) {
         console.error(err);
@@ -174,6 +172,7 @@ module.exports = class GSheet {
       throw new Error(`Invalid start column: ${properties.startColumn}`);
     }
 
+    // TODO: Use Object.assign()
     this.sheetValueProps[sheetIndex] = {};
     this.sheetValueProps[sheetIndex].startRow = properties.startRow;
     this.sheetValueProps[sheetIndex].startColumn = properties.startColumn;
@@ -191,7 +190,7 @@ module.exports = class GSheet {
    */
   setSpreadsheetProps(properties, maxSheets) {
     // Validate the input parameters
-    if (properties.title === undefined || properties.title === null ||
+    if (properties.title  === undefined || properties.title === null ||
         typeof properties.title !== 'string') {
       throw new Error(`Invalid spreadsheet title: ${properties.title}`);
     }
@@ -200,9 +199,9 @@ module.exports = class GSheet {
       throw new Error(`Invalid spreadsheet locale: ${properties.title}`);
     }
     if (maxSheets === undefined || maxSheets === null ||
-      typeof maxSheets !== 'number') {
-    throw new Error(`Invalid maximum no. of sheets: ${maxSheets}`);
-  }
+        typeof maxSheets !== 'number') {
+      throw new Error(`Invalid maximum no. of sheets: ${maxSheets}`);
+    }
 
     this.spreadsheetProps.title = properties.title;
     this.spreadsheetProps.locale = properties.locale;
