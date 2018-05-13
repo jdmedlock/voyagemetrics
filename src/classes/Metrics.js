@@ -63,7 +63,11 @@ module.exports = class Metrics {
       // Initialize the team data
       const team = eventJSON[prop];
       const index = parseInt(prop);
-      const teamName = team.repo.name;
+      // Force the team number at the end of the team name to be two digits
+      const teamName = team.repo.name.charAt(team.repo.name.length-2) === '-'
+        ? team.repo.name.slice(0,team.repo.name.length-1) + '0' +
+          team.repo.name.charAt(team.repo.name.length-1)
+        : team.repo.name;
       const tierName = teamName.split('-')[0];
       // TODO: Move to inner for-loop
       let isTeamActive = false;
@@ -131,6 +135,17 @@ module.exports = class Metrics {
     }
     // Calculate and add the Percentile Rank to each team member
     this.calculatePercentileRank();
+
+    // Sort the aggregated results in ascending team name sequence
+    this.aggregateResults.sort((a,b) => {
+      if (a.team < b.team) {
+        return -1;
+      }
+      if (a.team > b.team) {
+        return 1;
+      }
+      return 0;
+    });
   }
 
   /**

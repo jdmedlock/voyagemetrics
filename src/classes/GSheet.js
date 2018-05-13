@@ -82,7 +82,19 @@ module.exports = class GSheet {
               }
             ],
           }
-        ]
+        ],
+        "namedRanges": [
+          {
+            "namedRangeId": "1",
+            "name": "first_column",
+            "range": {
+              "sheetId": this.sheetProps[0].sheetId,
+              "startRowIndex": 0,
+              "startColumnIndex": 0,
+              "endColumnIndex": 1,
+            }
+          }
+        ],
       },
       auth: authClient,
     };
