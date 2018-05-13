@@ -18,6 +18,8 @@ const GSheet = require('./classes/GSheet');
 
     // Create a Google Sheet containing the metrics
     const gsheet = new GSheet(auth);
+    // TODO: complete invokation of createNamedRange
+    gsheet.createNamedRange();
     gsheet.setSpreadsheetProps({
       title: 'Chingu Voyage4 Metrics',
       locale: 'en',

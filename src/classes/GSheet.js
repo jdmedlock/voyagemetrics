@@ -10,11 +10,62 @@ module.exports = class GSheet {
    */
   constructor(authClient) {
     this.spreadsheetProps = {};
+    this.namedRanges = {};
     this.maxSheets = 0;
     this.sheets = [];
     this.sheetProps = [];
     this.sheetValueProps = [];
     this.sheetValues = [];
+  }
+
+  /**
+   * @description Create a new named range on the spreadsheet
+   * @param {String} rangeName Range name
+   * @param {Number} sheetId Sheet identification number
+   * @param {Number} startRowIndex Starting row number relative to 0
+   * @param {Number} endRowIndex Ending row number
+   * @param {Number} startColumnIndex Starting column number relative to 0
+   * @param {Number} endColumnIndex Ending column number
+   */
+  createNamedRange(rangeName, sheetId, startRowIndex, endRowIndex,
+                   startColumnIndex, endColumnIndex) {
+    // Buile a namedRange object to describe a specific range of rows and
+    // columns to be referenced by formulas. This following example shows the
+    // attributes and values in this object:
+    //  {
+    //    "namedRangeId": "1",
+    //    "name": "first_column",
+    //    "range": {
+    //      "sheetId": this.sheetProps[0].sheetId,
+    //      "startRowIndex": 0,
+    //      "endRowIndex": 1,
+    //      "startColumnIndex": 0,
+    //      "endColumnIndex": 1,
+    //    }
+    //  }
+    let namedRange = {};
+    let rangeId = 0;
+    if (this.namedRanges.length > 0) {
+      const rangeId = Math.max.apply(Math,
+        this.namedRanges.map((range) => {
+          return Number.parseInt(range.namedRangeId);
+        })
+      ) + 1;
+    }
+    namedRange.namedRangeId = rangeId.toString(10);
+    namedRange.name = rangeName;
+    namedRange.range = {};
+    namedRange.range.sheeId = sheetId;
+    namedRange.range.startRowIndex = startRowIndex;
+    if (endRowIndex !== null) {
+      namedRange.range.endRowIndex = endRowIndex;
+    }
+    namedRange.range.startColumnIndex = startColumnIndex;
+    if (endColumnIndex !== null) {
+      namedRange.range.endColumnIndex = endColumnIndex;
+    }
+
+    this.namedRanges.push(namedRange);
   }
 
   /**
@@ -83,18 +134,7 @@ module.exports = class GSheet {
             ],
           }
         ],
-        "namedRanges": [
-          {
-            "namedRangeId": "1",
-            "name": "first_column",
-            "range": {
-              "sheetId": this.sheetProps[0].sheetId,
-              "startRowIndex": 0,
-              "startColumnIndex": 0,
-              "endColumnIndex": 1,
-            }
-          }
-        ],
+        "namedRanges": this.namedRanges,
       },
       auth: authClient,
     };
