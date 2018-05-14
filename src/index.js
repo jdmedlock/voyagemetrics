@@ -14,12 +14,9 @@ const GSheet = require('./classes/GSheet');
   goauth.loadClientSecrets((auth) => {
     const metrics = new Metrics();
     metrics.calculateMetrics();
-    // metrics.writeCSV();
 
     // Create a Google Sheet containing the metrics
     const gsheet = new GSheet(auth);
-    // TODO: complete invokation of createNamedRange
-    gsheet.createNamedRange();
     gsheet.setSpreadsheetProps({
       title: 'Chingu Voyage4 Metrics',
       locale: 'en',
@@ -37,7 +34,12 @@ const GSheet = require('./classes/GSheet');
       startRow: 0,
       startColumn: 0,
     }, metrics.getAggregateResultValues(true));
+    gsheet.createNamedRange('Voyage_Metrics', 1, 0, null, 0, null);
 
     gsheet.createSpreadsheet(auth);
+
+    //TODO: Create Summary spreadseet using the addSheet property and using
+    // the spreadsheet id retrieved by createSpreadsheet
+
   });
 }());

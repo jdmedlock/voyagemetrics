@@ -10,7 +10,8 @@ module.exports = class GSheet {
    */
   constructor(authClient) {
     this.spreadsheetProps = {};
-    this.namedRanges = {};
+    this.spreadsheetUrl = "";
+    this.namedRanges = [];
     this.maxSheets = 0;
     this.sheets = [];
     this.sheetProps = [];
@@ -55,7 +56,7 @@ module.exports = class GSheet {
     namedRange.namedRangeId = rangeId.toString(10);
     namedRange.name = rangeName;
     namedRange.range = {};
-    namedRange.range.sheeId = sheetId;
+    namedRange.range.sheetId = sheetId;
     namedRange.range.startRowIndex = startRowIndex;
     if (endRowIndex !== null) {
       namedRange.range.endRowIndex = endRowIndex;
@@ -65,6 +66,7 @@ module.exports = class GSheet {
       namedRange.range.endColumnIndex = endColumnIndex;
     }
 
+    console.log('namedRange: ', namedRange);
     this.namedRanges.push(namedRange);
   }
 
@@ -143,7 +145,8 @@ module.exports = class GSheet {
       if (err) {
         console.error(err);
       }
-      // console.log('\nresponse.data: ', response.data);
+      //console.log('\nresponse.data: ', response.data);
+      this.spreadsheetUrl = response.data.spreadsheetUrl;
     });
   }
 
