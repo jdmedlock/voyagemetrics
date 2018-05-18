@@ -70,12 +70,62 @@ module.exports = class GSheet {
     this.namedRanges.push(namedRange);
   }
 
+
+
   /**
    * @description Create a new Google Sheet from properties of this instance
    * of the Sheet object
    * @param {Object} authClient Client authorization token
    */
   createSpreadsheet(authClient) {
+    // Build the sheets object containing the properties and data for each
+    // sheet in the spreadsheet
+    let sheetArray = [];
+    this.sheetProps.forEach((prop, propIndex) => {
+      const sheet = {
+        "properties": {
+          "sheetId": prop.sheetId,
+          "title": prop.title,
+          "index": prop.index,
+        },
+        "data": [
+          {
+            "startRow": this.startRow,
+            "startColumn": this.startColumn,
+            "rowData": [ this.createRowData(propIndex) ],
+          }
+        ],
+      };
+      sheetArray.push(sheet);
+    });
+    console.log('sheetArray: ', sheetArray);
+
+    // Build the Google Sheets request object
+    const request = {
+      resource: {
+        "properties": this.spreadsheetProps,
+        "sheets": sheetArray,
+        "namedRanges": this.namedRanges,
+      },
+      auth: authClient,
+    };
+
+    sheets.spreadsheets.create(request, (err, response) => {
+      if (err) {
+        console.error(err);
+      }
+      //console.log('\nresponse.data: ', response.data);
+      this.spreadsheetUrl = response.data.spreadsheetUrl;
+    });
+  }
+
+  /**
+   * @description Build an array containing the rows and columns of
+   * data for the desired sheet
+   * @param {Number} sheetIndex Identifies which sheet data is to be created for
+   * @returns {Array} An array containing the sheet's data
+   */
+  createRowData(sheetIndex) {
     // Build the rowData object used to pass sheet data to Google Sheets.
     // Transform the data values in `this.sheetValues` for each sheet to
     // be added to this spreadsheet. Simple data values are transformed into
@@ -89,10 +139,8 @@ module.exports = class GSheet {
     //      { userEnteredValue: { stringValue: 'cell 0-1' } },
     //    ],
     //  },
-    //
-    // TODO: enhance to support multiple sheets. Currently supports only a single sheet
-    const rowData = [];
-    this.sheetValues[0].forEach((row) => {
+    let rowData = [];
+    this.sheetValues[sheetIndex].forEach((row) => {
       let rowValues = [];
       row.forEach((cellValue, rowIndex) => {
         const cell = { userEnteredValue: {} };
@@ -115,39 +163,7 @@ module.exports = class GSheet {
       });
       rowData.push({values: rowValues});
     });
-
-    // Build the Google Sheets request object
-    const request = {
-      resource: {
-        "properties": this.spreadsheetProps,
-        "sheets": [
-          {
-            "properties": {
-              "sheetId": this.sheetProps[0].sheetId,
-              "title": this.sheetProps[0].title,
-              "index": this.sheetProps[0].index,
-            },
-            "data": [
-              {
-                "startRow": this.startRow,
-                "startColumn": this.startColumn,
-                "rowData": [ rowData ],
-              }
-            ],
-          }
-        ],
-        "namedRanges": this.namedRanges,
-      },
-      auth: authClient,
-    };
-
-    sheets.spreadsheets.create(request, (err, response) => {
-      if (err) {
-        console.error(err);
-      }
-      //console.log('\nresponse.data: ', response.data);
-      this.spreadsheetUrl = response.data.spreadsheetUrl;
-    });
+    return rowData;
   }
 
   /**

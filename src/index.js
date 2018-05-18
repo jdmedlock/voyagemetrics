@@ -24,7 +24,7 @@ const GSheet = require('./classes/GSheet');
 
     // Create the Team & Participant sheet containing the raw data
     gsheet.setSheetProps(0, {
-      sheetId: 1,
+      sheetId: 0,
       title: 'Voyage4 Teams & Participants',
       index: 0,
       rowCount: metrics.getAggregateResultValues().length,
@@ -34,12 +34,25 @@ const GSheet = require('./classes/GSheet');
       startRow: 0,
       startColumn: 0,
     }, metrics.getAggregateResultValues(true));
+
+    // Establish named ranges on the Team & Participant data 
     gsheet.createNamedRange('Voyage_Metrics', 1, 0, null, 0, null);
 
-    gsheet.createSpreadsheet(auth);
+    // Create the summary sheet to help analyze the Team & Participand data
+    gsheet.setSheetProps(1, {
+      sheetId: 1,
+      title: 'Voyage4 Teams & Participants Summary',
+      index: 1,
+      rowCount: 1,
+      columnCount: 2,
+    });
+    gsheet.setSheetValues(1, {
+      startRow: 0,
+      startColumn: 0,
+    }, [[99,99]]);    
 
-    //TODO: Create Summary spreadseet using the addSheet property and using
-    // the spreadsheet id retrieved by createSpreadsheet
+    // Create the Google Sheet
+    gsheet.createSpreadsheet(auth);
 
   });
 }());
