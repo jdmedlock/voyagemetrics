@@ -22,13 +22,14 @@ module.exports = class GSheet {
   /**
    * @description Create a new named range on the spreadsheet
    * @param {String} rangeName Range name
+   * @param {Number} rangeId Range number
    * @param {Number} sheetId Sheet identification number
    * @param {Number} startRowIndex Starting row number relative to 0
    * @param {Number} endRowIndex Ending row number
    * @param {Number} startColumnIndex Starting column number relative to 0
    * @param {Number} endColumnIndex Ending column number
    */
-  createNamedRange(rangeName, sheetId, startRowIndex, endRowIndex,
+  createNamedRange(rangeName, rangeId, sheetId, startRowIndex, endRowIndex,
                    startColumnIndex, endColumnIndex) {
     // Buile a namedRange object to describe a specific range of rows and
     // columns to be referenced by formulas. This following example shows the
@@ -45,7 +46,6 @@ module.exports = class GSheet {
     //    }
     //  }
     let namedRange = {};
-    let rangeId = 0;
     if (this.namedRanges.length > 0) {
       const rangeId = Math.max.apply(Math,
         this.namedRanges.map((range) => {
@@ -66,11 +66,8 @@ module.exports = class GSheet {
       namedRange.range.endColumnIndex = endColumnIndex;
     }
 
-    console.log('namedRange: ', namedRange);
     this.namedRanges.push(namedRange);
   }
-
-
 
   /**
    * @description Create a new Google Sheet from properties of this instance
@@ -98,7 +95,6 @@ module.exports = class GSheet {
       };
       sheetArray.push(sheet);
     });
-    console.log('sheetArray: ', sheetArray);
 
     // Build the Google Sheets request object
     const request = {
@@ -154,7 +150,12 @@ module.exports = class GSheet {
             rowValues.push(cell);
             break;
           case 'string':
-            cell.userEnteredValue.stringValue = cellValue.toString();
+            // Strings starting with '=' are assumed to be formulas
+            if (cellValue.charAt(0) !== '=') {
+              cell.userEnteredValue.stringValue = cellValue.toString();
+            } else {
+              cell.userEnteredValue.formulaValue = cellValue.toString();
+            }
             rowValues.push(cell);
             break;
           default:

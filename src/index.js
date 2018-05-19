@@ -36,7 +36,9 @@ const GSheet = require('./classes/GSheet');
     }, metrics.getAggregateResultValues(true));
 
     // Establish named ranges on the Team & Participant data 
-    gsheet.createNamedRange('Voyage_Metrics', 1, 0, null, 0, null);
+    gsheet.createNamedRange('Voyage_Metrics', 0, 0, 0, null, 0, null);
+    gsheet.createNamedRange('Voyage_Teams', 1, 0, 0, null, 1, 2);
+    gsheet.createNamedRange('Voyage_Team_Total', 2, 0, 0, null, 5, 6);
 
     // Create the summary sheet to help analyze the Team & Participand data
     gsheet.setSheetProps(1, {
@@ -49,7 +51,12 @@ const GSheet = require('./classes/GSheet');
     gsheet.setSheetValues(1, {
       startRow: 0,
       startColumn: 0,
-    }, [[99,99]]);    
+    }, [
+      ['Tier','No. Teams', 'Heartbeat Total'],
+      ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Bears*")', '=sumif(Voyage_Metrics,"Bears",Voyage_Team_Total)'],
+      ['Geckos', '=COUNTIF(UNIQUE(Voyage_Teams),"Geckos*")', '=sumif(Voyage_Metrics,"Geckos",Voyage_Team_Total)'],
+      ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Toucans*")', '=sumif(Voyage_Metrics,"Toucans",Voyage_Team_Total)'],
+  ]);    
 
     // Create the Google Sheet
     gsheet.createSpreadsheet(auth);
