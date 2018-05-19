@@ -10,6 +10,8 @@ module.exports = class GSheet {
    */
   constructor(authClient) {
     this.spreadsheetProps = {};
+    this.spreadsheetUrl = "";
+    this.namedRanges = [];
     this.maxSheets = 0;
     this.sheets = [];
     this.sheetProps = [];
@@ -18,11 +20,108 @@ module.exports = class GSheet {
   }
 
   /**
+   * @description Create a new named range on the spreadsheet
+   * @param {String} rangeName Range name
+   * @param {Number} rangeId Range number
+   * @param {Number} sheetId Sheet identification number
+   * @param {Number} startRowIndex Starting row number relative to 0
+   * @param {Number} endRowIndex Ending row number
+   * @param {Number} startColumnIndex Starting column number relative to 0
+   * @param {Number} endColumnIndex Ending column number
+   */
+  createNamedRange(rangeName, rangeId, sheetId, startRowIndex, endRowIndex,
+                   startColumnIndex, endColumnIndex) {
+    // Buile a namedRange object to describe a specific range of rows and
+    // columns to be referenced by formulas. This following example shows the
+    // attributes and values in this object:
+    //  {
+    //    "namedRangeId": "1",
+    //    "name": "first_column",
+    //    "range": {
+    //      "sheetId": this.sheetProps[0].sheetId,
+    //      "startRowIndex": 0,
+    //      "endRowIndex": 1,
+    //      "startColumnIndex": 0,
+    //      "endColumnIndex": 1,
+    //    }
+    //  }
+    let namedRange = {};
+    if (this.namedRanges.length > 0) {
+      const rangeId = Math.max.apply(Math,
+        this.namedRanges.map((range) => {
+          return Number.parseInt(range.namedRangeId);
+        })
+      ) + 1;
+    }
+    namedRange.namedRangeId = rangeId.toString(10);
+    namedRange.name = rangeName;
+    namedRange.range = {};
+    namedRange.range.sheetId = sheetId;
+    namedRange.range.startRowIndex = startRowIndex;
+    if (endRowIndex !== null) {
+      namedRange.range.endRowIndex = endRowIndex;
+    }
+    namedRange.range.startColumnIndex = startColumnIndex;
+    if (endColumnIndex !== null) {
+      namedRange.range.endColumnIndex = endColumnIndex;
+    }
+
+    this.namedRanges.push(namedRange);
+  }
+
+  /**
    * @description Create a new Google Sheet from properties of this instance
    * of the Sheet object
    * @param {Object} authClient Client authorization token
    */
   createSpreadsheet(authClient) {
+    // Build the sheets object containing the properties and data for each
+    // sheet in the spreadsheet
+    let sheetArray = [];
+    this.sheetProps.forEach((prop, propIndex) => {
+      const sheet = {
+        "properties": {
+          "sheetId": prop.sheetId,
+          "title": prop.title,
+          "index": prop.index,
+        },
+        "data": [
+          {
+            "startRow": this.startRow,
+            "startColumn": this.startColumn,
+            "rowData": [ this.createRowData(propIndex) ],
+          }
+        ],
+      };
+      sheetArray.push(sheet);
+    });
+
+    // Build the Google Sheets request object
+    const request = {
+      resource: {
+        "properties": this.spreadsheetProps,
+        "sheets": sheetArray,
+        "namedRanges": this.namedRanges,
+      },
+      auth: authClient,
+    };
+
+    sheets.spreadsheets.create(request, (err, response) => {
+      if (err) {
+        console.error(err);
+      }
+      //console.log('\nresponse.data: ', response.data);
+      this.spreadsheetUrl = response.data.spreadsheetUrl;
+    });
+  }
+
+  /**
+   * @description Build an array containing the rows and columns of
+   * data for the desired sheet
+   * @param {Number} sheetIndex Identifies which sheet data is to be created for
+   * @returns {Array} An array containing the sheet's data
+   */
+  createRowData(sheetIndex) {
     // Build the rowData object used to pass sheet data to Google Sheets.
     // Transform the data values in `this.sheetValues` for each sheet to
     // be added to this spreadsheet. Simple data values are transformed into
@@ -36,10 +135,8 @@ module.exports = class GSheet {
     //      { userEnteredValue: { stringValue: 'cell 0-1' } },
     //    ],
     //  },
-    //
-    // TODO: enhance to support multiple sheets. Currently supports only a single sheet
-    const rowData = [];
-    this.sheetValues[0].forEach((row) => {
+    let rowData = [];
+    this.sheetValues[sheetIndex].forEach((row) => {
       let rowValues = [];
       row.forEach((cellValue, rowIndex) => {
         const cell = { userEnteredValue: {} };
@@ -53,7 +150,12 @@ module.exports = class GSheet {
             rowValues.push(cell);
             break;
           case 'string':
-            cell.userEnteredValue.stringValue = cellValue.toString();
+            // Strings starting with '=' are assumed to be formulas
+            if (cellValue.charAt(0) !== '=') {
+              cell.userEnteredValue.stringValue = cellValue.toString();
+            } else {
+              cell.userEnteredValue.formulaValue = cellValue.toString();
+            }
             rowValues.push(cell);
             break;
           default:
@@ -62,39 +164,7 @@ module.exports = class GSheet {
       });
       rowData.push({values: rowValues});
     });
-
-    // Build the Google Sheets request object
-    const request = {
-      resource: {
-        "properties": this.spreadsheetProps,
-        "sheets": [
-          {
-            "properties": {
-              "sheetId": this.sheetProps[0].sheetId,
-              "title": this.sheetProps[0].title,
-              "index": this.sheetProps[0].index,
-            },
-            "data": [
-              {
-                "startRow": this.startRow,
-                "startColumn": this.startColumn,
-                "rowData": [ rowData ],
-              }
-            ],
-          }
-        ]
-      },
-      auth: authClient,
-    };
-
-    console.log('request:\n', JSON.stringify(request, null, 2));
-
-    sheets.spreadsheets.create(request, (err, response) => {
-      if (err) {
-        console.error(err);
-      }
-      // console.log('\nresponse.data: ', response.data);
-    });
+    return rowData;
   }
 
   /**
@@ -174,6 +244,7 @@ module.exports = class GSheet {
       throw new Error(`Invalid start column: ${properties.startColumn}`);
     }
 
+    // TODO: Use Object.assign()
     this.sheetValueProps[sheetIndex] = {};
     this.sheetValueProps[sheetIndex].startRow = properties.startRow;
     this.sheetValueProps[sheetIndex].startColumn = properties.startColumn;
@@ -191,7 +262,7 @@ module.exports = class GSheet {
    */
   setSpreadsheetProps(properties, maxSheets) {
     // Validate the input parameters
-    if (properties.title === undefined || properties.title === null ||
+    if (properties.title  === undefined || properties.title === null ||
         typeof properties.title !== 'string') {
       throw new Error(`Invalid spreadsheet title: ${properties.title}`);
     }
@@ -200,9 +271,9 @@ module.exports = class GSheet {
       throw new Error(`Invalid spreadsheet locale: ${properties.title}`);
     }
     if (maxSheets === undefined || maxSheets === null ||
-      typeof maxSheets !== 'number') {
-    throw new Error(`Invalid maximum no. of sheets: ${maxSheets}`);
-  }
+        typeof maxSheets !== 'number') {
+      throw new Error(`Invalid maximum no. of sheets: ${maxSheets}`);
+    }
 
     this.spreadsheetProps.title = properties.title;
     this.spreadsheetProps.locale = properties.locale;

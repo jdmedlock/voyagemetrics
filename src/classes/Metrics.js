@@ -1,8 +1,10 @@
 const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
-const eventJSON = require('/Users/jdmedlock/Downloads/voyage4_events_20180423.json');
+// TODO: Add command line input of file name
+const eventJSON = require('/Users/jim/Downloads/voyage4_events_20180419.json');
 
+// TODO: Preshape and normalize data based on GitHub diffs
 const NOT_FOUND = -1;
 
 module.exports = class Metrics {
@@ -17,17 +19,16 @@ module.exports = class Metrics {
     //    `name:` defines the GitHub account name of the individual the metrics
     //            are related to
     //    `teamActive:` true if the team is active or false if it is inactive
+    //    `totalScore:` total of all metric socres
+    //    `percentileRank:`calculated percentile rank of this participant
     //    `metrics:` holds the results for each team member. Rows contain the
     //            team or team member name, the metric type identifying if it
     //            is for a team or team member, and the remaining columns
     //            contain the accumulated count for a specific metric.
     this.aggregateResults = [];
 
-    // Calculate the number of qualifying events;
-    this.qualifyingEventCount = ghEvents.length + 2;
-
     this.NO_STATIC_COLUMNS = 7;
-    this.NO_COLUMNS = this.NO_STATIC_COLUMNS + this.qualifyingEventCount;
+    this.NO_COLUMNS = this.NO_STATIC_COLUMNS + ghEvents.length;
   }
 
   calculatePercentileRank() {
@@ -62,8 +63,13 @@ module.exports = class Metrics {
       // Initialize the team data
       const team = eventJSON[prop];
       const index = parseInt(prop);
-      const teamName = team.repo.name;
+      // Force the team number at the end of the team name to be two digits
+      const teamName = team.repo.name.charAt(team.repo.name.length-2) === '-'
+        ? team.repo.name.slice(0,team.repo.name.length-1) + '0' +
+          team.repo.name.charAt(team.repo.name.length-1)
+        : team.repo.name;
       const tierName = teamName.split('-')[0];
+      // TODO: Move to inner for-loop
       let isTeamActive = false;
       let memberMetrics = [];
 
@@ -129,6 +135,17 @@ module.exports = class Metrics {
     }
     // Calculate and add the Percentile Rank to each team member
     this.calculatePercentileRank();
+
+    // Sort the aggregated results in ascending team name sequence
+    this.aggregateResults.sort((a,b) => {
+      if (a.team < b.team) {
+        return -1;
+      }
+      if (a.team > b.team) {
+        return 1;
+      }
+      return 0;
+    });
   }
 
   /**
@@ -138,7 +155,6 @@ module.exports = class Metrics {
    * @returns {Number} index of the matching event
    */
   findAdminByActor(actor) {
-    "use strict";
     return voyageAdmins["gh-admin-accounts"].findIndex((element) => {
       return element === actor;
     });
@@ -180,6 +196,7 @@ module.exports = class Metrics {
       headings.push(element.title);
       return headings;
     }, []);
+    // TODO: Find a more declarative way of determining column headings
     return ['Tier', 'Team', 'Name', 'Team Active', 'Last Actor Activity',
       'Total Score', 'Percentile Rank', ...metricHeadings];
   }
@@ -199,7 +216,7 @@ module.exports = class Metrics {
 
     // If requested, add headers to the result array
     if (addHeaders) {
-      results.push(this.getAggregateResultHeadings())
+      results.push(this.getAggregateResultHeadings());
     }
 
     // Add data rows to the result array

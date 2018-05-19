@@ -40,6 +40,19 @@ module.exports = class Sheet {
                 ],
               }
             ],
+            "namedRanges": [
+              {
+                "namedRangeId": "1",
+                "name": "first_column",
+                "range": {
+                  "sheetId": 1,
+                  "startRowIndex": 0,
+                  "endRowIndex": 1,
+                  "startColumnIndex": 0,
+                  "endColumnIndex": 0,
+                }
+              }
+            ],
           }
         ]
       },
@@ -48,12 +61,12 @@ module.exports = class Sheet {
 
     sheets.spreadsheets.create(request, function(err, response) {
       if (err) {
-        console.error(err);
+        console.error('err: ', err);
         return;
       }
 
       // TODO: Change code below to process the `response` object:
-      // console.log(response);
+      console.log('response: ',response);
     });
   }
 
