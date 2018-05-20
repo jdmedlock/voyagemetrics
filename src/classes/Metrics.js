@@ -2,7 +2,7 @@ const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
 // TODO: Add command line input of file name
-const eventJSON = require('/Users/jim/Downloads/voyage4_events_20180419.json');
+const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
 
 // TODO: Preshape and normalize data based on GitHub diffs
 const NOT_FOUND = -1;
@@ -31,25 +31,61 @@ module.exports = class Metrics {
     this.NO_COLUMNS = this.NO_STATIC_COLUMNS + ghEvents.length;
   }
 
-  calculatePercentileRank() {
+  /**
+   * @description Sort comparator for the team name in the aggregateResults array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
+   * 0 if they are equal.
+   */
+  aggregateResultsTeamComparator(a,b) {
+    if (a.team < b.team) {
+      return -1;
+    }
+    if (a.team > b.team) {
+      return 1;
+    }
+    return 0;
+  }
+
+  /**
+   * @description Sort comparator for the total score in the aggregateResults array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
+   * 0 if they are equal.
+   */
+  aggregateResultsScoreComparator(a,b) {
+    if (a.totalScore < b.totalScore) {
+      return -1;
+    }
+    if (a.totalScore > b.totalScore) {
+      return 1;
+    }
+    return 0;
+  }
+
+  /**
+   * @description Calculate the percentile rank of each team member in an
+   * array of objects.
+   * @param {Object[]} objectArray An array of objects
+   * @param {String} percentileRankAttr Name of the attribute that is will
+   * be updated with the percentile rank value for the corresponding entry
+   * @param {Object} sortComparator A sort comparator function used to order
+   * the object array in descending sequence on the attribute the percentile
+   * rank is to be based on.
+   */
+  calculatePercentileRank(objectArray, percentileRankAttr, sortComparator) {
     // Sort the aggregated results in decending sequence by the total score
-    this.aggregateResults.sort((a,b) => {
-      if (a.totalScore > b.totalScore) {
-        return -1;
-      }
-      if (a.totalScore < b.totalScore) {
-        return 1;
-      }
-      return 0;
-    });
+    objectArray.sort(sortComparator);
 
     // Calculate the percentile rank for each team member. The percentile rank
     // is calculated as:
     //    (# scores lower than current score / total number of scores) * 100
-    const totalNoScores = this.aggregateResults.length;
-    this.aggregateResults.map((entry, entryIndex) => {
+    const totalNoScores = objectArray.length;
+    objectArray.map((entry, entryIndex) => {
       const noLowerScores = totalNoScores - (entryIndex - 1);
-      entry.percentileRank = ((noLowerScores / totalNoScores) * 100).toFixed(2);
+      entry[percentileRankAttr] = ((noLowerScores / totalNoScores) * 100).toFixed(2);
       return entry;
     });
   }
@@ -134,18 +170,131 @@ module.exports = class Metrics {
       }
     }
     // Calculate and add the Percentile Rank to each team member
-    this.calculatePercentileRank();
+    this.calculatePercentileRank(this.aggregateResults, 'percentileRank',
+      this.aggregateResultsScoreComparator);
 
     // Sort the aggregated results in ascending team name sequence
-    this.aggregateResults.sort((a,b) => {
-      if (a.team < b.team) {
-        return -1;
+    this.aggregateResults.sort(this.aggregateResultsTeamComparator);
+  }
+
+  /**
+   * @description Create a summary of the team members in the Voyage, which
+   * will be used to populate a Google Sheet
+   * @returns {String[]} An array of rows, of which each cell cooresponds to
+   * a column in the sheet.
+   */
+  createMemberSummary() {
+    let memberMetrics = [];
+    let memberSummary = [];
+    this.aggregateResults.forEach((element) => {
+      const memberIndex = this.findMemberSummaryByMember(memberMetrics, element.name);
+      if (memberIndex === NOT_FOUND) {
+        memberMetrics.push({
+          tier: element.tier,
+          team: element.team,
+          name: element.name,
+          heartbeatIndicator: '',
+          heartbeatTotal: element.totalScore,
+          percentileRank: 0
+        });
+      } else {
+        memberMetrics[memberIndex].heartbeatTotal += element.totalScore;
       }
-      if (a.team > b.team) {
-        return 1;
-      }
-      return 0;
     });
+
+    // Calculate and add the Percentile Rank to each team member
+    this.calculatePercentileRank(memberMetrics, 'percentileRank',
+      this.memberMetricsHeartbeatComparator);
+
+    // Add the team metrics to the team summary to be added to the sheet
+    memberMetrics.forEach((element) => {
+      memberSummary.push([
+        element.tier,
+        element.team,
+        element.name,
+        element.heartbeatIndicator,
+        element.heartbeatTotal,
+        element.percentileRank,
+        //element.percentileRank / element.noMembers).toFixed(2),
+      ]);
+    });
+    memberSummary.sort(this.memberSummaryPercentileRankComparator);
+    return [
+      [''],
+      ['Team Member Analytics'],
+      ['Tier', 'Team', 'Team Member',	'Heartbeat Indicator', 'Heartbeat Total',	'Percentile Rank'],
+      ...memberSummary,
+    ];
+  }
+
+  /**
+   * @description Create a summary of the teams in the Voyage, which will be
+   * used to populate a Google Sheet
+   * @returns {String[]} An array of rows, of which each cell cooresponds to
+   * a column in the sheet.
+   */
+  createTeamSummary() {
+    let teamMetrics = [];
+    let teamSummary = [];
+    this.aggregateResults.forEach((element) => {
+      const teamIndex = this.findTeamSummaryByTeam(teamMetrics, element.team);
+      if (teamIndex === NOT_FOUND) {
+        teamMetrics.push({
+          tier: element.tier,
+          team: element.team,
+          heartbeatIndicator: '',
+          noMembers: 1,
+          heartbeatTotal: element.totalScore,
+          percentileRank: 0
+        });
+      } else {
+        teamMetrics[teamIndex].noMembers += 1;
+        teamMetrics[teamIndex].heartbeatTotal += element.totalScore;
+      }
+    });
+
+    // Calculate and add the Percentile Rank to each team member
+    this.calculatePercentileRank(teamMetrics, 'percentileRank',
+      this.teamMetricsHeartbeatComparator);
+
+    // Add the team metrics to the team summary to be added to the sheet
+    teamMetrics.forEach((element) => {
+      teamSummary.push([
+        element.tier,
+        element.team,
+        element.heartbeatIndicator,
+        element.noMembers,
+        element.heartbeatTotal,
+        element.percentileRank,
+        //element.percentileRank / element.noMembers).toFixed(2),
+      ]);
+    });
+    teamSummary.sort(this.teamSummaryPercentileRankComparator);
+    return [
+      [''],
+      ['Team Analytics', '', '', '', '', '',],
+      ['Tier', 'Team', 'Heartbeat Indicator',	'No. Members', 'Heartbeat Total', 'Percentile Rank'],
+      ...teamSummary,
+    ];
+  }
+
+  /**
+   * @description Create a summary of the tiers in this Voyage which will be
+   * used to populate a Google Sheet
+   * @returns {String[]} An array of rows, of which each cell cooresponds to
+   * a column in the sheet.
+   */
+  createTierSummary() {
+    const tierSummary = [
+      [''],
+      ['Tier Analytics','',''],
+      ['Tier','No. Teams', 'Heartbeat Total'],
+      ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Bears*")', '=sumif(Voyage_Metrics,"Bears",Voyage_Team_Total)'],
+      ['Geckos', '=COUNTIF(UNIQUE(Voyage_Teams),"Geckos*")', '=sumif(Voyage_Metrics,"Geckos",Voyage_Team_Total)'],
+      ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Toucans*")', '=sumif(Voyage_Metrics,"Toucans",Voyage_Team_Total)'],
+      ['','',''],
+    ];
+    return tierSummary;
   }
 
   /**
@@ -157,6 +306,19 @@ module.exports = class Metrics {
   findAdminByActor(actor) {
     return voyageAdmins["gh-admin-accounts"].findIndex((element) => {
       return element === actor;
+    });
+  }
+
+  /**
+   * @description Find a matching entry in the memberMetrics array matching
+   * the input team name.
+   * @param {Array} memberMetrics Array containing the member metrics
+   * @param {String} name Voyage member name
+   * @returns {Number} index of the matching event
+   */
+  findMemberSummaryByMember(memberMetrics, name) {
+    return memberMetrics.findIndex((element) => {
+      return element.name === name;
     });
   }
 
@@ -187,6 +349,19 @@ module.exports = class Metrics {
   }
 
   /**
+   * @description Find a matching entry in the teamMetrics array matching
+   * the input team name.
+   * @param {Array} teamMetrics Array containing the team metrics
+   * @param {String} teamName Voyage team name
+   * @returns {Number} index of the matching event
+   */
+  findTeamSummaryByTeam(teamMetrics, teamName) {
+    return teamMetrics.findIndex((element) => {
+      return element.team === teamName;
+    });
+  }
+
+  /**
    * @description Return an array of column headings excluding those for
    * deprecated and passive events.
    * @returns {String[]} Array of column headings
@@ -196,7 +371,6 @@ module.exports = class Metrics {
       headings.push(element.title);
       return headings;
     }, []);
-    // TODO: Find a more declarative way of determining column headings
     return ['Tier', 'Team', 'Name', 'Team Active', 'Last Actor Activity',
       'Total Score', 'Percentile Rank', ...metricHeadings];
   }
@@ -232,6 +406,52 @@ module.exports = class Metrics {
       results.push(columnValues);
     });
     return results;
+  }
+
+  /**
+   * @description Sort comparator for the total score in the member metrics array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's score < that of object b, 1 if a > b, or
+   * 0 if they are equal.
+   */
+  memberMetricsHeartbeatComparator(a,b) {
+    return b.heartbeatTotal - a.heartbeatTotal;
+  }
+
+  /**
+   * @description Sort comparator for the percentile rank in decending order
+   * within the memberSummary array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
+   * 0 if they are equal.
+   */
+  memberSummaryPercentileRankComparator(a,b) {
+    return b[5] - a[5];
+  }
+
+  /**
+   * @description Sort comparator for the total score in the team metrics array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's score < that of object b, 1 if a > b, or
+   * 0 if they are equal.
+   */
+  teamMetricsHeartbeatComparator(a,b) {
+    return b.heartbeatTotal - a.heartbeatTotal;
+  }
+
+  /**
+   * @description Sort comparator for the percentile rank in decending order
+   * within the teamSummary array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
+   * 0 if they are equal.
+   */
+  teamSummaryPercentileRankComparator(a,b) {
+    return b[5] - a[5];
   }
 
   /**
