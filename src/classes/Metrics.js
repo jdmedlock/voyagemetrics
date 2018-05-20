@@ -223,7 +223,6 @@ module.exports = class Metrics {
       [''],
       ['Team Member Analytics'],
       ['Tier', 'Team', 'Team Member',	'Heartbeat Indicator', 'Heartbeat Total',	'Percentile Rank'],
-      [''],
       ...memberSummary,
     ];
   }
