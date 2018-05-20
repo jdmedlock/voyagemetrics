@@ -32,13 +32,13 @@ module.exports = class Metrics {
   }
 
   /**
-   * @description Sort comparator for the aggregateResults array
+   * @description Sort comparator for the team name in the aggregateResults array
    * @param {Object} a First object to compare
    * @param {Object} b Second object to compare
    * @returns -1 if object a's team name < that of object b, 1 if a > b, or
    * 0 if they are equal.
    */
-  aggregateResultsComparator(a,b) {
+  aggregateResultsTeamComparator(a,b) {
     if (a.team < b.team) {
       return -1;
     }
@@ -49,12 +49,30 @@ module.exports = class Metrics {
   }
 
   /**
+   * @description Sort comparator for the total score in the aggregateResults array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
+   * 0 if they are equal.
+   */
+  aggregateResultsScoreComparator(a,b) {
+    if (a.totalScore < b.totalScore) {
+      return -1;
+    }
+    if (a.totalScore > b.totalScore) {
+      return 1;
+    }
+    return 0;
+  }
+
+
+  /**
    * @description Calculate the percentile rank of each team member in the 
    * aggregateResults array.
    */
   calculatePercentileRank() {
     // Sort the aggregated results in decending sequence by the total score
-    this.aggregateResults.sort(this.aggregateResultsComparator);
+    this.aggregateResults.sort(this.aggregateResultsScoreComparator);
 
     // Calculate the percentile rank for each team member. The percentile rank
     // is calculated as:
@@ -150,7 +168,7 @@ module.exports = class Metrics {
     this.calculatePercentileRank();
 
     // Sort the aggregated results in ascending team name sequence
-    this.aggregateResults.sort(this.aggregateResultsComparator);
+    this.aggregateResults.sort(this.aggregateResultsTeamComparator);
   }
 
   /**
@@ -161,10 +179,11 @@ module.exports = class Metrics {
    */
   createMemberSummary() {
     const memberSummary = [
+      [''],
       ['Tier', 'Team', 'Team Member',	'Heartbeat Indicator', 'Heartbeat Total',	'Percentile Rank'],
       [''],
     ];
-    return memberSummary
+    return memberSummary;
   }
 
   /**
@@ -174,15 +193,41 @@ module.exports = class Metrics {
    * a column in the sheet.
    */
   createTeamSummary() {
-    const teamSummary = [
+    let teamMetrics = [];
+    let teamSummary = [];
+    this.aggregateResults.forEach((element) => {
+      const teamIndex = this.findTeamSummaryByTeam(teamMetrics, element.team);
+      if (teamIndex === NOT_FOUND) {
+        teamMetrics.push({
+          tier: element.tier,
+          team: element.team,
+          heartbeatIndicator: '',
+          noMembers: 1,
+          heartbeatTotal: element.totalScore,
+          percentileRank: Number.parseFloat(element.percentileRank),
+        });
+      } else {
+        teamMetrics[teamIndex].noMembers += 1;
+        teamMetrics[teamIndex].heartbeatTotal += element.totalScore;
+        teamMetrics[teamIndex].percentileRank += Number.parseFloat(element.percentileRank);
+      }
+    });
+    teamMetrics.forEach((element) => {
+      teamSummary.push([
+        element.tier,
+        element.team,
+        element.heartbeatIndicator,
+        element.noMembers,
+        element.heartbeatTotal,
+        (element.percentileRank / element.noMembers).toFixed(2),
+      ])
+    });
+    teamSummary.sort(this.teamSummaryPercentileRankComparator);
+    return [
       ['', '', '', '', '', '',],
       ['Tier', 'Team', 'Heartbeat Indicator',	'No. Members', 'Heartbeat Total', 'Percentile Rank'],
-      ['', '', '', '', '', '',],
+      ...teamSummary,
     ];
-    this.aggregateResults.forEach((element) => {
-
-    });
-    return teamSummary;
   }
 
   /**
@@ -242,6 +287,18 @@ module.exports = class Metrics {
   }
 
   /**
+   * @description Find a matching entry in the teamMetrics array matching
+   * the input team name.
+   * @param {String} teamName Voyage team name
+   * @returns {Number} index of the matching event
+   */
+  findTeamSummaryByTeam(teamMetrics, teamName) {
+    return teamMetrics.findIndex((element) => {
+      return element.team === teamName;
+    });
+  }
+
+  /**
    * @description Return an array of column headings excluding those for
    * deprecated and passive events.
    * @returns {String[]} Array of column headings
@@ -287,6 +344,24 @@ module.exports = class Metrics {
       results.push(columnValues);
     });
     return results;
+  }
+
+  /**
+   * @description Sort comparator for the percentile rank in decending order
+   * within the teamSummary array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
+   * 0 if they are equal.
+   */
+  teamSummaryPercentileRankComparator(a,b) {
+    if (a[5] > b[5]) {
+      return -1;
+    }
+    if (a[5] < b[5]) {
+      return 1;
+    }
+    return 0;
   }
 
   /**
