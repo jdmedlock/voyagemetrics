@@ -48,15 +48,19 @@ const GSheet = require('./classes/GSheet');
       rowCount: 1,
       columnCount: 2,
     });
+
+    const tierSummary = metrics.createTierSummary();
+    const teamSummary = metrics.createTeamSummary();
+    const memberSummary = metrics.createMemberSummary();
+
     gsheet.setSheetValues(1, {
       startRow: 0,
       startColumn: 0,
     }, [
-      ['Tier','No. Teams', 'Heartbeat Total'],
-      ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Bears*")', '=sumif(Voyage_Metrics,"Bears",Voyage_Team_Total)'],
-      ['Geckos', '=COUNTIF(UNIQUE(Voyage_Teams),"Geckos*")', '=sumif(Voyage_Metrics,"Geckos",Voyage_Team_Total)'],
-      ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Toucans*")', '=sumif(Voyage_Metrics,"Toucans",Voyage_Team_Total)'],
-  ]);    
+      ...tierSummary,
+      ...teamSummary,
+      ...memberSummary,
+    ]);    
 
     // Create the Google Sheet
     gsheet.createSpreadsheet(auth);

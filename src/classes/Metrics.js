@@ -2,7 +2,7 @@ const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
 // TODO: Add command line input of file name
-const eventJSON = require('/Users/jim/Downloads/voyage4_events_20180419.json');
+const eventJSON = require('/Users/jdmedlock/Downloads/voyage4_events_20180423.json');
 
 // TODO: Preshape and normalize data based on GitHub diffs
 const NOT_FOUND = -1;
@@ -31,17 +31,30 @@ module.exports = class Metrics {
     this.NO_COLUMNS = this.NO_STATIC_COLUMNS + ghEvents.length;
   }
 
+  /**
+   * @description Sort comparator for the aggregateResults array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
+   * 0 if they are equal.
+   */
+  aggregateResultsComparator(a,b) {
+    if (a.team < b.team) {
+      return -1;
+    }
+    if (a.team > b.team) {
+      return 1;
+    }
+    return 0;
+  }
+
+  /**
+   * @description Calculate the percentile rank of each team member in the 
+   * aggregateResults array.
+   */
   calculatePercentileRank() {
     // Sort the aggregated results in decending sequence by the total score
-    this.aggregateResults.sort((a,b) => {
-      if (a.totalScore > b.totalScore) {
-        return -1;
-      }
-      if (a.totalScore < b.totalScore) {
-        return 1;
-      }
-      return 0;
-    });
+    this.aggregateResults.sort(this.aggregateResultsComparator);
 
     // Calculate the percentile rank for each team member. The percentile rank
     // is calculated as:
@@ -137,15 +150,57 @@ module.exports = class Metrics {
     this.calculatePercentileRank();
 
     // Sort the aggregated results in ascending team name sequence
-    this.aggregateResults.sort((a,b) => {
-      if (a.team < b.team) {
-        return -1;
-      }
-      if (a.team > b.team) {
-        return 1;
-      }
-      return 0;
+    this.aggregateResults.sort(this.aggregateResultsComparator);
+  }
+
+  /**
+   * @description Create a summary of the team members in the Voyage, which
+   * will be used to populate a Google Sheet
+   * @returns {String[]} An array of rows, of which each cell cooresponds to
+   * a column in the sheet.
+   */
+  createMemberSummary() {
+    const memberSummary = [
+      ['Tier', 'Team', 'Team Member',	'Heartbeat Indicator', 'Heartbeat Total',	'Percentile Rank'],
+      [''],
+    ];
+    return memberSummary
+  }
+
+  /**
+   * @description Create a summary of the teams in the Voyage, which will be
+   * used to populate a Google Sheet
+   * @returns {String[]} An array of rows, of which each cell cooresponds to
+   * a column in the sheet.
+   */
+  createTeamSummary() {
+    const teamSummary = [
+      ['', '', '', '', '', '',],
+      ['Tier', 'Team', 'Heartbeat Indicator',	'No. Members', 'Heartbeat Total', 'Percentile Rank'],
+      ['', '', '', '', '', '',],
+    ];
+    this.aggregateResults.forEach((element) => {
+
     });
+    return teamSummary;
+  }
+
+  /**
+   * @description Create a summary of the tiers in this Voyage which will be
+   * used to populate a Google Sheet
+   * @returns {String[]} An array of rows, of which each cell cooresponds to
+   * a column in the sheet.
+   */
+  createTierSummary() {
+    const tierSummary = [ 
+      ['','',''],
+      ['Tier','No. Teams', 'Heartbeat Total'],
+      ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Bears*")', '=sumif(Voyage_Metrics,"Bears",Voyage_Team_Total)'],
+      ['Geckos', '=COUNTIF(UNIQUE(Voyage_Teams),"Geckos*")', '=sumif(Voyage_Metrics,"Geckos",Voyage_Team_Total)'],
+      ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Toucans*")', '=sumif(Voyage_Metrics,"Toucans",Voyage_Team_Total)'],
+      ['','',''],
+    ];
+    return tierSummary;
   }
 
   /**
