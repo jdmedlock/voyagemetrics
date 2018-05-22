@@ -2,7 +2,7 @@ const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
 // TODO: Add command line input of file name
-const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
+const eventJSON = require('/Users/jim/Downloads/voyage4_events_20180419.json');
 
 // TODO: Preshape and normalize data based on GitHub diffs
 const NOT_FOUND = -1;
@@ -29,40 +29,6 @@ module.exports = class Metrics {
 
     this.NO_STATIC_COLUMNS = 7;
     this.NO_COLUMNS = this.NO_STATIC_COLUMNS + ghEvents.length;
-  }
-
-  /**
-   * @description Sort comparator for the team name in the aggregateResults array
-   * @param {Object} a First object to compare
-   * @param {Object} b Second object to compare
-   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
-   * 0 if they are equal.
-   */
-  aggregateResultsTeamComparator(a,b) {
-    if (a.team < b.team) {
-      return -1;
-    }
-    if (a.team > b.team) {
-      return 1;
-    }
-    return 0;
-  }
-
-  /**
-   * @description Sort comparator for the total score in the aggregateResults array
-   * @param {Object} a First object to compare
-   * @param {Object} b Second object to compare
-   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
-   * 0 if they are equal.
-   */
-  aggregateResultsScoreComparator(a,b) {
-    if (a.totalScore < b.totalScore) {
-      return -1;
-    }
-    if (a.totalScore > b.totalScore) {
-      return 1;
-    }
-    return 0;
   }
 
   /**
@@ -171,10 +137,10 @@ module.exports = class Metrics {
     }
     // Calculate and add the Percentile Rank to each team member
     this.calculatePercentileRank(this.aggregateResults, 'percentileRank',
-      this.aggregateResultsScoreComparator);
+      this.scoreComparator);
 
     // Sort the aggregated results in ascending team name sequence
-    this.aggregateResults.sort(this.aggregateResultsTeamComparator);
+    this.aggregateResults.sort(this.teamComparator);
   }
 
   /**
@@ -204,7 +170,7 @@ module.exports = class Metrics {
 
     // Calculate and add the Percentile Rank to each team member
     this.calculatePercentileRank(memberMetrics, 'percentileRank',
-      this.memberMetricsHeartbeatComparator);
+      this.heartbeatComparator);
 
     // Add the team metrics to the team summary to be added to the sheet
     memberMetrics.forEach((element) => {
@@ -218,7 +184,7 @@ module.exports = class Metrics {
         //element.percentileRank / element.noMembers).toFixed(2),
       ]);
     });
-    memberSummary.sort(this.memberSummaryPercentileRankComparator);
+    memberSummary.sort(this.percentileRankComparator);
     return [
       [''],
       ['Team Member Analytics'],
@@ -255,7 +221,7 @@ module.exports = class Metrics {
 
     // Calculate and add the Percentile Rank to each team member
     this.calculatePercentileRank(teamMetrics, 'percentileRank',
-      this.teamMetricsHeartbeatComparator);
+      this.heartbeatComparator);
 
     // Add the team metrics to the team summary to be added to the sheet
     teamMetrics.forEach((element) => {
@@ -269,7 +235,7 @@ module.exports = class Metrics {
         //element.percentileRank / element.noMembers).toFixed(2),
       ]);
     });
-    teamSummary.sort(this.teamSummaryPercentileRankComparator);
+    teamSummary.sort(this.percentileRankComparator);
     return [
       [''],
       ['Team Analytics', '', '', '', '', '',],
@@ -409,49 +375,60 @@ module.exports = class Metrics {
   }
 
   /**
-   * @description Sort comparator for the total score in the member metrics array
+   * @description Sort comparator for the total score in an array of objects
    * @param {Object} a First object to compare
    * @param {Object} b Second object to compare
    * @returns -1 if object a's score < that of object b, 1 if a > b, or
    * 0 if they are equal.
    */
-  memberMetricsHeartbeatComparator(a,b) {
+  heartbeatComparator(a,b) {
     return b.heartbeatTotal - a.heartbeatTotal;
   }
 
   /**
    * @description Sort comparator for the percentile rank in decending order
-   * within the memberSummary array
+   * within an array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's percentile rank < that of object b, 1 if a > b,
+   * or 0 if they are equal.
+   */
+  percentileRankComparator(a,b) {
+    return b[5] - a[5];
+  }
+
+  /**
+   * @description Sort comparator for the total score in an array of objects
    * @param {Object} a First object to compare
    * @param {Object} b Second object to compare
    * @returns -1 if object a's team name < that of object b, 1 if a > b, or
    * 0 if they are equal.
    */
-  memberSummaryPercentileRankComparator(a,b) {
-    return b[5] - a[5];
+  scoreComparator(a,b) {
+    if (a.totalScore < b.totalScore) {
+      return -1;
+    }
+    if (a.totalScore > b.totalScore) {
+      return 1;
+    }
+    return 0;
   }
 
   /**
-   * @description Sort comparator for the total score in the team metrics array
-   * @param {Object} a First object to compare
-   * @param {Object} b Second object to compare
-   * @returns -1 if object a's score < that of object b, 1 if a > b, or
-   * 0 if they are equal.
-   */
-  teamMetricsHeartbeatComparator(a,b) {
-    return b.heartbeatTotal - a.heartbeatTotal;
-  }
-
-  /**
-   * @description Sort comparator for the percentile rank in decending order
-   * within the teamSummary array
+   * @description Sort comparator for the team name in an array of objects
    * @param {Object} a First object to compare
    * @param {Object} b Second object to compare
    * @returns -1 if object a's team name < that of object b, 1 if a > b, or
    * 0 if they are equal.
    */
-  teamSummaryPercentileRankComparator(a,b) {
-    return b[5] - a[5];
+  teamComparator(a,b) {
+    if (a.team < b.team) {
+      return -1;
+    }
+    if (a.team > b.team) {
+      return 1;
+    }
+    return 0;
   }
 
   /**
