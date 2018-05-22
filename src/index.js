@@ -49,17 +49,13 @@ const GSheet = require('./classes/GSheet');
       columnCount: 2,
     });
 
-    const tierSummary = metrics.createTierSummary();
-    const teamSummary = metrics.createTeamSummary();
-    const memberSummary = metrics.createMemberSummary();
-
     gsheet.setSheetValues(1, {
       startRow: 0,
       startColumn: 0,
     }, [
-      ...tierSummary,
-      ...teamSummary,
-      ...memberSummary,
+      ...metrics.createTierSummary(),
+      ...metrics.createTeamSummary(),
+      ...metrics.createMemberSummary(),
     ]);    
 
     // Create the Google Sheet
