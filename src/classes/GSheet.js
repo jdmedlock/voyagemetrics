@@ -9,6 +9,7 @@ module.exports = class GSheet {
    * @param {any} authClient Client authorization token
    */
   constructor(authClient) {
+    this.spreadsheetId = null;
     this.spreadsheetProps = {};
     this.spreadsheetUrl = "";
     this.namedRanges = [];
@@ -21,37 +22,98 @@ module.exports = class GSheet {
 
   /**
    * @description Create a new conditional formatting rule on a sheet
-   * {
-   *   "ranges": [
-   *     {
-   *       "sheetId": number,
-   *       "startRowIndex": number,
-   *       "endRowIndex": number,
-   *       "startColumnIndex": number,
-   *       "endColumnIndex": number
-   *     }
-   *   ],
-   *   "booleanRule": {
-   *     "condition": {
-   *       "type": NUMBER_BETWEEN,
-   *       "values": [
-   *         { "userEnteredValue": string-low-value },
-   *         { "userEnteredValue": string-high-value }
-   *       ]
-   *     },
-   *     "format": {
-   *       "backgroundColor": {
-   *         "red": number,
-   *         "green": number,
-   *         "blue": number,
-   *         "alpha": number
-   *       },
-   *     },
-   *   }
-   * }
+   * @param {Number} ruleIndex This rules unique identifying number
+   * @param {Number} applyToSheetId Sheet id the rule is to be defined on
+   * @param {Number} applyToColumn Comun number the rule is to be applied to
+   * @param {String} indicatorColor Color the rule is to use. This is used to
+   * identify the threshold whose ranges are to be added to the rule.
+   * @param {Object} metrics Metrics object containing the thresholds
+   * @param {Object} authClient Client authorization token
    */
-  createFormatRule() {
+  createFormatRule(ruleIndex, applyToSheetId, applyToColumn, indicatorColor, metrics, authClient) {
+    // Build the Google Sheets request object following the following format:
+    //   {
+    //     "requests": [{
+    //       "addConditionalFormatRule": {
+    //         "rule": {
+    //           "ranges": [{
+    //             "sheetId": 1,
+    //             "startRowIndex": 1,
+    //             "startColumnIndex": 1
+    //           }],
+    //           "booleanRule": {
+    //             "condition": {
+    //               "type": "NUMBER_BETWEEN",
+    //               "values": [{
+    //                   "userEnteredValue": ""
+    //                 },
+    //                 {
+    //                   "userEnteredValue": ""
+    //                 }
+    //               ]
+    //             },
+    //             "format": {
+    //               "backgroundColor": {
+    //                 "red": 1,
+    //                 "green": 1,
+    //                 "blue": 1,
+    //                 "alpha": 1
+    //               }
+    //             }
+    //           }
+    //         },
+    //         "index": 1
+    //       }
+    //     }],
+    //     "includeSpreadsheetInResponse": false
+    //   }
+    const thresholdDefn = JSON.parse(metrics.getThreshold(indicatorColor));
+    const request = {
+      spreadsheetId: this.spreadsheetId,
+      resource: {
+        requests: [{
+          "addConditionalFormatRule": {
+            "rule": {
+              "ranges": [{
+                "sheetId": applyToSheetId,
+                "startRowIndex": 1,
+                "startColumnIndex": applyToColumn
+              }],
+              "booleanRule": {
+                "condition": {
+                  "type": "NUMBER_BETWEEN",
+                  "values": [{
+                      "userEnteredValue": thresholdDefn.lowValue.toString(),
+                    },
+                    {
+                      "userEnteredValue": thresholdDefn.highValue.toString(),
+                    }
+                  ]
+                },
+                "format": {
+                  "backgroundColor": {
+                    "red": thresholdDefn.color.red,
+                    "green": thresholdDefn.color.green,
+                    "blue": thresholdDefn.color.blue,
+                    "alpha": thresholdDefn.color.alpha
+                  }
+                }
+              }
+            },
+            "index": ruleIndex
+          }
+        }],
+        "includeSpreadsheetInResponse": false
+      },
+      auth: authClient,
+    };
 
+    sheets.spreadsheets.batchUpdate(request, (err, response) => {
+      if (err) {
+        console.error(err);
+      }
+      //console.log('\nresponse.data: ', response.data);
+    });
   }
 
   /**
@@ -109,7 +171,7 @@ module.exports = class GSheet {
    * of the Sheet object
    * @param {Object} authClient Client authorization token
    */
-  createSpreadsheet(authClient) {
+  createSpreadsheet(authClient, callback) {
     // Build the sheets object containing the properties and data for each
     // sheet in the spreadsheet
     let sheetArray = [];
@@ -145,8 +207,10 @@ module.exports = class GSheet {
       if (err) {
         console.error(err);
       }
-      //console.log('\nresponse.data: ', response.data);
+      // console.log('\nresponse.data: ', response.data);
+      this.spreadsheetId = response.data.spreadsheetId;
       this.spreadsheetUrl = response.data.spreadsheetUrl;
+      callback(err, response.data);
     });
   }
 

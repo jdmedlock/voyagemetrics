@@ -2,7 +2,7 @@ const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
 // TODO: Add command line input of file name
-const eventJSON = require('/Users/jim/Downloads/voyage4_events_20180419.json');
+const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
 
 // TODO: Preshape and normalize data based on GitHub diffs
 const NOT_FOUND = -1;
@@ -160,7 +160,6 @@ module.exports = class Metrics {
           tier: element.tier,
           team: element.team,
           name: element.name,
-          heartbeatIndicator: '',
           heartbeatTotal: element.totalScore,
           percentileRank: 0
         });
@@ -179,7 +178,6 @@ module.exports = class Metrics {
         element.tier,
         element.team,
         element.name,
-        element.heartbeatIndicator,
         element.heartbeatTotal,
         element.percentileRank,
         //element.percentileRank / element.noMembers).toFixed(2),
@@ -189,7 +187,7 @@ module.exports = class Metrics {
     return [
       [''],
       ['Team Member Analytics'],
-      ['Tier', 'Team', 'Team Member',	'Heartbeat Indicator', 'Heartbeat Total',	'Percentile Rank'],
+      ['Tier', 'Team', 'Team Member',	'Heartbeat Total',	'Percentile Rank'],
       ...memberSummary,
     ];
   }
@@ -209,7 +207,6 @@ module.exports = class Metrics {
         teamMetrics.push({
           tier: element.tier,
           team: element.team,
-          heartbeatIndicator: '',
           noMembers: 1,
           heartbeatTotal: element.totalScore,
           percentileRank: 0
@@ -226,12 +223,9 @@ module.exports = class Metrics {
 
     // Add the team metrics to the team summary to be added to the sheet
     teamMetrics.forEach((element) => {
-      const heartbeatColor = this.findThresholdColor(element.heartbeatTotal);
       teamSummary.push([
         element.tier,
         element.team,
-//        element.heartbeatIndicator,
-        heartbeatColor,
         element.noMembers,
         element.heartbeatTotal,
         element.percentileRank,
@@ -242,7 +236,7 @@ module.exports = class Metrics {
     return [
       [''],
       ['Team Analytics', '', '', '', '', '',],
-      ['Tier', 'Team', 'Heartbeat Indicator',	'No. Members', 'Heartbeat Total', 'Percentile Rank'],
+      ['Tier', 'Team', 'No. Members', 'Heartbeat Total', 'Percentile Rank'],
       ...teamSummary,
     ];
   }
@@ -416,6 +410,21 @@ module.exports = class Metrics {
       results.push(columnValues);
     });
     return results;
+  }
+
+/**
+ * @description Retrieve the threshold entry for a matching indicator color
+ * @param {String} indicatorColor Threshold indicator color
+ * @returns {Object} A threshold entry for the matching indicator color. If a
+ * matching entry is not found -1 will be returned.
+ */
+getThreshold(indicatorColor) {
+    for (let i = 0; i < this.thresholds.length; i++) {
+      if (indicatorColor === this.thresholds[i].indicatorColor) {
+        return JSON.stringify(this.thresholds[i]);
+      }
+    }
+    return NOT_FOUND;
   }
 
   /**
