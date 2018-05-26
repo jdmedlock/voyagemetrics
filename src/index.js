@@ -13,6 +13,11 @@ const GSheet = require('./classes/GSheet');
   // Authorize Google Sheets access and calculate the Voyage metrics
   goauth.loadClientSecrets((auth) => {
     const metrics = new Metrics();
+    metrics.setThresholds([
+      {indicatorColor: 'Indicator-Green', lowValue: 70, highValue: 100},
+      {indicatorColor: 'Indicator-Yellow', lowValue: 41, highValue: 69},
+      {indicatorColor: 'Indicator-Red', lowValue: 0, highValue: 40},
+    ]);
     metrics.calculateMetrics();
 
     // Create a Google Sheet containing the metrics
@@ -53,10 +58,13 @@ const GSheet = require('./classes/GSheet');
       startRow: 0,
       startColumn: 0,
     }, [
+      ...metrics.createThresholds(),
       ...metrics.createTierSummary(),
       ...metrics.createTeamSummary(),
       ...metrics.createMemberSummary(),
-    ]);    
+    ]);
+
+    gsheet.createFormatRule();
 
     // Create the Google Sheet
     gsheet.createSpreadsheet(auth);

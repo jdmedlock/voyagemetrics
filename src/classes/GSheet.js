@@ -20,6 +20,41 @@ module.exports = class GSheet {
   }
 
   /**
+   * @description Create a new conditional formatting rule on a sheet
+   * {
+   *   "ranges": [
+   *     {
+   *       "sheetId": number,
+   *       "startRowIndex": number,
+   *       "endRowIndex": number,
+   *       "startColumnIndex": number,
+   *       "endColumnIndex": number
+   *     }
+   *   ],
+   *   "booleanRule": {
+   *     "condition": {
+   *       "type": NUMBER_BETWEEN,
+   *       "values": [
+   *         { "userEnteredValue": string-low-value },
+   *         { "userEnteredValue": string-high-value }
+   *       ]
+   *     },
+   *     "format": {
+   *       "backgroundColor": {
+   *         "red": number,
+   *         "green": number,
+   *         "blue": number,
+   *         "alpha": number
+   *       },
+   *     },
+   *   }
+   * }
+   */
+  createFormatRule() {
+
+  }
+
+  /**
    * @description Create a new named range on the spreadsheet
    * @param {String} rangeName Range name
    * @param {Number} rangeId Range number

@@ -29,6 +29,7 @@ module.exports = class Metrics {
 
     this.NO_STATIC_COLUMNS = 7;
     this.NO_COLUMNS = this.NO_STATIC_COLUMNS + ghEvents.length;
+    this.thresholds = [];
   }
 
   /**
@@ -225,10 +226,12 @@ module.exports = class Metrics {
 
     // Add the team metrics to the team summary to be added to the sheet
     teamMetrics.forEach((element) => {
+      const heartbeatColor = this.findThresholdColor(element.heartbeatTotal);
       teamSummary.push([
         element.tier,
         element.team,
-        element.heartbeatIndicator,
+//        element.heartbeatIndicator,
+        heartbeatColor,
         element.noMembers,
         element.heartbeatTotal,
         element.percentileRank,
@@ -241,6 +244,30 @@ module.exports = class Metrics {
       ['Team Analytics', '', '', '', '', '',],
       ['Tier', 'Team', 'Heartbeat Indicator',	'No. Members', 'Heartbeat Total', 'Percentile Rank'],
       ...teamSummary,
+    ];
+  }
+
+  /**
+   * @description Create a summary of the Heartbeat scoring methodology and
+   * the low and high ranges associated with the red, yellow, and green
+   * KPI ranges.
+   * @returns {String[]} An array of rows, of which each cell cooresponds to
+   * a column in the sheet.
+   */
+  createThresholds() {
+    return [
+      [''],
+      ['Scores are based on GitHub Events which are weighted as follows:'],
+      ['- Passive events - 0 : These are things done for a team like when we create the repo and assign team members.'],
+      ['- Managing events -1: Routine things teams may do like assigning tags and labels to a repo. These are important, but don’t directly contribute to developing a product'],
+      ['- Developing - 2: Activities that directly contribute to developing a product like pushing code to GH'],
+      ['- Publishing - 3: Making an app available to others like creating a PR'],
+      [''],
+      ['Heartbeat Thresholds'],
+      ['Status', 'Low Percentile Rank', 'High Percentile Rank'],
+      ['Green', 70, 100],
+      ['Yellow', 41, 69],
+      ['Red', 0, 40],
     ];
   }
 
@@ -258,7 +285,6 @@ module.exports = class Metrics {
       ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Bears*")', '=sumif(Voyage_Metrics,"Bears",Voyage_Team_Total)'],
       ['Geckos', '=COUNTIF(UNIQUE(Voyage_Teams),"Geckos*")', '=sumif(Voyage_Metrics,"Geckos",Voyage_Team_Total)'],
       ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Toucans*")', '=sumif(Voyage_Metrics,"Toucans",Voyage_Team_Total)'],
-      ['','',''],
     ];
     return tierSummary;
   }
@@ -325,6 +351,24 @@ module.exports = class Metrics {
     return teamMetrics.findIndex((element) => {
       return element.team === teamName;
     });
+  }
+
+  /**
+   * @description Find the threshold color corresponding to a given heartbeat
+   * value
+   * @param {Number} heartbeatValue Specified heartbeat value
+   * @returns {String} Heartbeat color value
+   */
+  findThresholdColor(heartbeatValue) {
+    let heartbeatColor = '';
+    for (let i = 0; i < this.thresholds.length; i++) {
+      if (heartbeatValue >= this.thresholds[i].lowValue &&
+        heartbeatValue <= this.thresholds[i].highValue) {
+        heartbeatColor = this.thresholds[i].indicatorColor;
+        break;
+      }
+    }
+    return heartbeatColor;
   }
 
   /**
@@ -412,6 +456,22 @@ module.exports = class Metrics {
       return 1;
     }
     return 0;
+  }
+
+  /**
+   * @description Establish Heartbeat threshold values
+   * @param {Object[]} thresholds An array of objects, each of which having
+   * the following attributes:
+   *  [{
+   *    indicatorColor: String,
+   *    lowValue: Number,
+   *    highValue: Number
+   *  },
+   *  ...
+   *  ]
+   */
+  setThresholds(thresholds) {
+    this.thresholds = thresholds;
   }
 
   /**
