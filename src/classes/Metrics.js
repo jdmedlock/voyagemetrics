@@ -2,7 +2,7 @@ const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
 // TODO: Add command line input of file name
-const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
+const eventJSON = require('/Users/jdmedlock/Downloads/voyage4_events_20180423.json');
 
 // TODO: Preshape and normalize data based on GitHub diffs
 const NOT_FOUND = -1;
@@ -29,40 +29,7 @@ module.exports = class Metrics {
 
     this.NO_STATIC_COLUMNS = 7;
     this.NO_COLUMNS = this.NO_STATIC_COLUMNS + ghEvents.length;
-  }
-
-  /**
-   * @description Sort comparator for the team name in the aggregateResults array
-   * @param {Object} a First object to compare
-   * @param {Object} b Second object to compare
-   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
-   * 0 if they are equal.
-   */
-  aggregateResultsTeamComparator(a,b) {
-    if (a.team < b.team) {
-      return -1;
-    }
-    if (a.team > b.team) {
-      return 1;
-    }
-    return 0;
-  }
-
-  /**
-   * @description Sort comparator for the total score in the aggregateResults array
-   * @param {Object} a First object to compare
-   * @param {Object} b Second object to compare
-   * @returns -1 if object a's team name < that of object b, 1 if a > b, or
-   * 0 if they are equal.
-   */
-  aggregateResultsScoreComparator(a,b) {
-    if (a.totalScore < b.totalScore) {
-      return -1;
-    }
-    if (a.totalScore > b.totalScore) {
-      return 1;
-    }
-    return 0;
+    this.thresholds = [];
   }
 
   /**
@@ -171,10 +138,10 @@ module.exports = class Metrics {
     }
     // Calculate and add the Percentile Rank to each team member
     this.calculatePercentileRank(this.aggregateResults, 'percentileRank',
-      this.aggregateResultsScoreComparator);
+      this.scoreComparator);
 
     // Sort the aggregated results in ascending team name sequence
-    this.aggregateResults.sort(this.aggregateResultsTeamComparator);
+    this.aggregateResults.sort(this.teamComparator);
   }
 
   /**
@@ -193,7 +160,6 @@ module.exports = class Metrics {
           tier: element.tier,
           team: element.team,
           name: element.name,
-          heartbeatIndicator: '',
           heartbeatTotal: element.totalScore,
           percentileRank: 0
         });
@@ -204,7 +170,7 @@ module.exports = class Metrics {
 
     // Calculate and add the Percentile Rank to each team member
     this.calculatePercentileRank(memberMetrics, 'percentileRank',
-      this.memberMetricsHeartbeatComparator);
+      this.heartbeatComparator);
 
     // Add the team metrics to the team summary to be added to the sheet
     memberMetrics.forEach((element) => {
@@ -212,17 +178,16 @@ module.exports = class Metrics {
         element.tier,
         element.team,
         element.name,
-        element.heartbeatIndicator,
         element.heartbeatTotal,
         element.percentileRank,
         //element.percentileRank / element.noMembers).toFixed(2),
       ]);
     });
-    memberSummary.sort(this.memberSummaryPercentileRankComparator);
+    memberSummary.sort(this.percentileRankComparator);
     return [
       [''],
       ['Team Member Analytics'],
-      ['Tier', 'Team', 'Team Member',	'Heartbeat Indicator', 'Heartbeat Total',	'Percentile Rank'],
+      ['Tier', 'Team', 'Team Member',	'Heartbeat Total',	'Percentile Rank'],
       ...memberSummary,
     ];
   }
@@ -242,7 +207,6 @@ module.exports = class Metrics {
         teamMetrics.push({
           tier: element.tier,
           team: element.team,
-          heartbeatIndicator: '',
           noMembers: 1,
           heartbeatTotal: element.totalScore,
           percentileRank: 0
@@ -255,26 +219,49 @@ module.exports = class Metrics {
 
     // Calculate and add the Percentile Rank to each team member
     this.calculatePercentileRank(teamMetrics, 'percentileRank',
-      this.teamMetricsHeartbeatComparator);
+      this.heartbeatComparator);
 
     // Add the team metrics to the team summary to be added to the sheet
     teamMetrics.forEach((element) => {
       teamSummary.push([
         element.tier,
         element.team,
-        element.heartbeatIndicator,
         element.noMembers,
         element.heartbeatTotal,
         element.percentileRank,
         //element.percentileRank / element.noMembers).toFixed(2),
       ]);
     });
-    teamSummary.sort(this.teamSummaryPercentileRankComparator);
+    teamSummary.sort(this.percentileRankComparator);
     return [
       [''],
       ['Team Analytics', '', '', '', '', '',],
-      ['Tier', 'Team', 'Heartbeat Indicator',	'No. Members', 'Heartbeat Total', 'Percentile Rank'],
+      ['Tier', 'Team', 'No. Members', 'Heartbeat Total', 'Percentile Rank'],
       ...teamSummary,
+    ];
+  }
+
+  /**
+   * @description Create a summary of the Heartbeat scoring methodology and
+   * the low and high ranges associated with the red, yellow, and green
+   * KPI ranges.
+   * @returns {String[]} An array of rows, of which each cell cooresponds to
+   * a column in the sheet.
+   */
+  createThresholds() {
+    return [
+      [''],
+      ['Scores are based on GitHub Events which are weighted as follows:'],
+      ['- Passive events - 0 : These are things done for a team like when we create the repo and assign team members.'],
+      ['- Managing events -1: Routine things teams may do like assigning tags and labels to a repo. These are important, but don’t directly contribute to developing a product'],
+      ['- Developing - 2: Activities that directly contribute to developing a product like pushing code to GH'],
+      ['- Publishing - 3: Making an app available to others like creating a PR'],
+      [''],
+      ['Heartbeat Thresholds'],
+      ['Status', 'Low Percentile Rank', 'High Percentile Rank'],
+      ['Green', 70, 100],
+      ['Yellow', 41, 69],
+      ['Red', 0, 40],
     ];
   }
 
@@ -292,7 +279,6 @@ module.exports = class Metrics {
       ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Bears*")', '=sumif(Voyage_Metrics,"Bears",Voyage_Team_Total)'],
       ['Geckos', '=COUNTIF(UNIQUE(Voyage_Teams),"Geckos*")', '=sumif(Voyage_Metrics,"Geckos",Voyage_Team_Total)'],
       ['Bears', '=COUNTIF(UNIQUE(Voyage_Teams),"Toucans*")', '=sumif(Voyage_Metrics,"Toucans",Voyage_Team_Total)'],
-      ['','',''],
     ];
     return tierSummary;
   }
@@ -362,6 +348,24 @@ module.exports = class Metrics {
   }
 
   /**
+   * @description Find the threshold color corresponding to a given heartbeat
+   * value
+   * @param {Number} heartbeatValue Specified heartbeat value
+   * @returns {String} Heartbeat color value
+   */
+  findThresholdColor(heartbeatValue) {
+    let heartbeatColor = '';
+    for (let i = 0; i < this.thresholds.length; i++) {
+      if (heartbeatValue >= this.thresholds[i].lowValue &&
+        heartbeatValue <= this.thresholds[i].highValue) {
+        heartbeatColor = this.thresholds[i].indicatorColor;
+        break;
+      }
+    }
+    return heartbeatColor;
+  }
+
+  /**
    * @description Return an array of column headings excluding those for
    * deprecated and passive events.
    * @returns {String[]} Array of column headings
@@ -408,50 +412,92 @@ module.exports = class Metrics {
     return results;
   }
 
+/**
+ * @description Retrieve the threshold entry for a matching indicator color
+ * @param {String} indicatorColor Threshold indicator color
+ * @returns {Object} A threshold entry for the matching indicator color. If a
+ * matching entry is not found -1 will be returned.
+ */
+getThreshold(indicatorColor) {
+    for (let i = 0; i < this.thresholds.length; i++) {
+      if (indicatorColor === this.thresholds[i].indicatorColor) {
+        return JSON.stringify(this.thresholds[i]);
+      }
+    }
+    return NOT_FOUND;
+  }
+
   /**
-   * @description Sort comparator for the total score in the member metrics array
+   * @description Sort comparator for the total score in an array of objects
    * @param {Object} a First object to compare
    * @param {Object} b Second object to compare
    * @returns -1 if object a's score < that of object b, 1 if a > b, or
    * 0 if they are equal.
    */
-  memberMetricsHeartbeatComparator(a,b) {
+  heartbeatComparator(a,b) {
     return b.heartbeatTotal - a.heartbeatTotal;
   }
 
   /**
    * @description Sort comparator for the percentile rank in decending order
-   * within the memberSummary array
+   * within an array
+   * @param {Object} a First object to compare
+   * @param {Object} b Second object to compare
+   * @returns -1 if object a's percentile rank < that of object b, 1 if a > b,
+   * or 0 if they are equal.
+   */
+  percentileRankComparator(a,b) {
+    return b[4] - a[4];
+  }
+
+  /**
+   * @description Sort comparator for the total score in an array of objects
    * @param {Object} a First object to compare
    * @param {Object} b Second object to compare
    * @returns -1 if object a's team name < that of object b, 1 if a > b, or
    * 0 if they are equal.
    */
-  memberSummaryPercentileRankComparator(a,b) {
-    return b[5] - a[5];
+  scoreComparator(a,b) {
+    if (a.totalScore < b.totalScore) {
+      return -1;
+    }
+    if (a.totalScore > b.totalScore) {
+      return 1;
+    }
+    return 0;
   }
 
   /**
-   * @description Sort comparator for the total score in the team metrics array
-   * @param {Object} a First object to compare
-   * @param {Object} b Second object to compare
-   * @returns -1 if object a's score < that of object b, 1 if a > b, or
-   * 0 if they are equal.
+   * @description Establish Heartbeat threshold values
+   * @param {Object[]} thresholds An array of objects, each of which having
+   * the following attributes:
+   *  [{
+   *    indicatorColor: String,
+   *    lowValue: Number,
+   *    highValue: Number
+   *  },
+   *  ...
+   *  ]
    */
-  teamMetricsHeartbeatComparator(a,b) {
-    return b.heartbeatTotal - a.heartbeatTotal;
+  setThresholds(thresholds) {
+    this.thresholds = thresholds;
   }
 
   /**
-   * @description Sort comparator for the percentile rank in decending order
-   * within the teamSummary array
+   * @description Sort comparator for the team name in an array of objects
    * @param {Object} a First object to compare
    * @param {Object} b Second object to compare
    * @returns -1 if object a's team name < that of object b, 1 if a > b, or
    * 0 if they are equal.
    */
-  teamSummaryPercentileRankComparator(a,b) {
-    return b[5] - a[5];
+  teamComparator(a,b) {
+    if (a.team < b.team) {
+      return -1;
+    }
+    if (a.team > b.team) {
+      return 1;
+    }
+    return 0;
   }
 
   /**
