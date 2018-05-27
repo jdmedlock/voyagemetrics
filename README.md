@@ -6,10 +6,22 @@
 <br/>
 [![Packagist](https://img.shields.io/packagist/l/doctrine/orm.svg)](https://github.com/jdmedlock/voyagemetrics/)
 
-Voyage Metrics parses the JSON file created by the Voyage Events app and 
+Voyage Metrics parses the JSON file created by the Voyage Events app and
 generates a Google Spreadsheet containing summary metrics and KPI's to allow
 the effectiveness of the Voyage to be guaged. The JSON file created by Voyage
 Events contains GitHub event data for each team participating in the Voyage.
+
+The motivation for fully automating this is that in prior up to 8 hours per
+week has been spent on manually gathering data for analysis. The goal is to
+reduce this to a few minutes so this time can instead be spent on analyzing
+the data instead of gathering and organizing it.
+
+The use case for this spreadsheet is to provide a general indicator of team
+and participant health as reflected by GitHub activity. In the future we’ll want
+to add other factors such as Slack and checkin activity to provide a more
+accurate view. However, even at this stage teams that are in ‘red’ status will
+be given the most attention, followed by those in ‘yellow’ status. Those in
+‘green’ could be ignored since presumably they don’t require any special help.
 
 [Installation](#installation) | [Usage](#usage) |
 [Contributing](#contributing) |
