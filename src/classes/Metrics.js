@@ -2,7 +2,7 @@ const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
 // TODO: Add command line input of file name
-const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
+const eventJSON = require('/Users/jdmedlock/Downloads/voyage4_events_20180423.json');
 
 // TODO: Preshape and normalize data based on GitHub diffs
 const NOT_FOUND = -1;
@@ -447,7 +447,7 @@ getThreshold(indicatorColor) {
    * or 0 if they are equal.
    */
   percentileRankComparator(a,b) {
-    return b[5] - a[5];
+    return b[4] - a[4];
   }
 
   /**

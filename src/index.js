@@ -21,9 +21,9 @@ const NOT_FOUND = -1;
         lowValue: 70,
         highValue: 100,
         color: {
-          red: 63,
-          green: 191,
-          blue: 63,
+          red: 0.6,
+          green: 0.8,
+          blue: 0,
           alpha: 1
         }
       },
@@ -32,9 +32,9 @@ const NOT_FOUND = -1;
         lowValue: 41,
         highValue: 69,
         color: {
-          red: 247,
-          green: 247,
-          blue: 83,
+          red: 0.9,
+          green: 0.9,
+          blue: 0.2,
           alpha: 1
         }
       },
@@ -43,9 +43,9 @@ const NOT_FOUND = -1;
         lowValue: 0,
         highValue: 40,
         color: {
-          red: 199,
-          green: 4,
-          blue: 39,
+          red: 1,
+          green: 0,
+          blue: 0,
           alpha: 1
         }
       },
