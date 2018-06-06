@@ -2,7 +2,7 @@ const { ACTIVITY_PASSIVE, ACTIVITY_MANAGING, ACTIVITY_DEVELOPING,
   ACTIVITY_PUBLISHING, ghEvents } = require('../ghEvents');
 const voyageAdmins = require('../../voyageAdmins.json');
 // TODO: Add command line input of file name
-const eventJSON = require('/Users/jim.medlock/Downloads/voyage4_events_20180423.json');
+const eventJSON = require('/Users/jdmedlock/Downloads/voyage5_events_week1T_20180604.json');
 
 // TODO: Preshape and normalize data based on GitHub diffs
 const NOT_FOUND = -1;
@@ -67,11 +67,17 @@ module.exports = class Metrics {
       const team = eventJSON[prop];
       const index = parseInt(prop);
       // Force the team number at the end of the team name to be two digits
-      const teamName = team.repo.name.charAt(team.repo.name.length-2) === '-'
+      let teamName = team.repo.name.charAt(team.repo.name.length-2) === '-'
         ? team.repo.name.slice(0,team.repo.name.length-1) + '0' +
           team.repo.name.charAt(team.repo.name.length-1)
         : team.repo.name;
       const tierName = teamName.split('-')[0];
+      // Retrieve the team name used within the team. The GitHub API repo
+      // name will differ from the HTML repo name if the team renamed their
+      // repo.
+      const urlParts = team.repo.html_url.split('/');
+      const urlTeamName = urlParts[urlParts.length-1];
+      teamName = urlTeamName !== team.repo.name ? urlTeamName : teamName;
       // TODO: Move to inner for-loop
       let isTeamActive = false;
       let memberMetrics = [];
